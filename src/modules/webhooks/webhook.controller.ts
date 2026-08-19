@@ -3,7 +3,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import { prisma } from "../../lib/prisma";
 import { authenticateApiKey } from "../../middleware/auth";
-import { ValidationError, NotFoundError, ForbiddenError } from "../../lib/errors";
+import { ValidationError, NotFoundError } from "../../lib/errors";
 
 const router = Router();
 

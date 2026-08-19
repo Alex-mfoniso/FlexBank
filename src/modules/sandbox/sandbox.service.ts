@@ -2,7 +2,6 @@ import { prisma } from "../../lib/prisma";
 import { logger } from "../../lib/logger";
 import { ValidationError, NotFoundError, ForbiddenError } from "../../lib/errors";
 import { TransferService } from "../transfers/transfer.service";
-import { LedgerRepository } from "../ledger/ledger.repository";
 import { Money } from "../../lib/money";
 import crypto from "crypto";
 
@@ -10,7 +9,6 @@ const SANDBOX_MAX_FUNDING_AMOUNT = 1000000000; // 10,000,000.00 minor units
 const SANDBOX_MAX_DAILY_FUNDING = 5000000000;  // 50,000,000.00 minor units
 
 export class SandboxService {
-  private static readonly ledgerRepo = new LedgerRepository();
   private static readonly transferService = new TransferService();
 
   /**
@@ -106,7 +104,7 @@ export class SandboxService {
 
       // Create standard balanced double-entry funding Journal (status "posted" fires webhooks automatically)
       const journalId = `txn_${crypto.randomUUID().replace(/-/g, "")}`;
-      const journal = await tx.journal.create({
+      await tx.journal.create({
         data: {
           id: journalId,
           projectId,
@@ -147,7 +145,6 @@ export class SandboxService {
         where: { id: accountId },
         data: {
           available: Money.add(account.available, amount),
-          balance: Money.add(account.balance, amount),
         },
       });
 

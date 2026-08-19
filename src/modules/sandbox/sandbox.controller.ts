@@ -18,7 +18,7 @@ const simulateSchema = z.object({
 router.use(authenticateApiKey);
 
 // Global Sandbox Boundary guard
-router.use((req: Request, res: Response, next: NextFunction) => {
+router.use((req: Request, _res: Response, next: NextFunction) => {
   const context = req.apiKeyContext!;
   if (context.environment !== "test") {
     return next(new ForbiddenError("Sandbox simulator operations are strictly forbidden in the live environment"));
