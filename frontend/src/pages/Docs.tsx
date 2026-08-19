@@ -21,7 +21,9 @@ import {
   Copy,
   Check,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  Menu,
+  X
 } from "lucide-react";
 
 // Types
@@ -41,6 +43,7 @@ interface DocItem {
 export const Docs: React.FC = () => {
   const { selectedProjectId, token, environment } = useApp();
   const isPublicView = !token;
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeDocId, setActiveDocId] = useState("overview");
   const [apiKeyToken, setApiKeyToken] = useState("fb_test_xxxxxxxxxxxxxxxxxxxxxxxx");
@@ -343,31 +346,70 @@ Follow this 4-step guide to run your first request against the gateway:
       
       {/* Public View Top Navigation Header */}
       {isPublicView && (
-        <div className="flex items-center justify-between pb-6 border-b border-slate-200">
-          <Link to="/" className="flex items-center space-x-3 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white text-lg shadow-md shadow-indigo-600/20 group-hover:scale-105 transition-all">
-              F
-            </div>
-            <div>
-              <span className="text-lg font-black text-slate-900 tracking-tight block leading-none">FlexBank</span>
-              <span className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider font-mono">Developer Hub</span>
-            </div>
-          </Link>
-          <div className="flex items-center space-x-3">
-            <Link
-              to="/login"
-              className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              Sign In
+        <>
+          <div className="flex items-center justify-between pb-6 border-b border-slate-200">
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white text-lg shadow-md shadow-indigo-600/20 group-hover:scale-105 transition-all">
+                F
+              </div>
+              <div>
+                <span className="text-lg font-black text-slate-900 tracking-tight block leading-none">FlexBank</span>
+                <span className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider font-mono">Developer Hub</span>
+              </div>
             </Link>
-            <Link
-              to="/signup"
-              className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg shadow-md shadow-indigo-600/10 transition-all focus:outline-none"
-            >
-              Create Sandbox Account
-            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-3">
+              <Link
+                to="/login"
+                className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/signup"
+                className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg shadow-md shadow-indigo-600/10 transition-all focus:outline-none"
+              >
+                Create Sandbox Account
+              </Link>
+            </div>
+
+            {/* Mobile Hamburger Button */}
+            <div className="flex md:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-950 focus:outline-none"
+                aria-label="Toggle menu"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </button>
+            </div>
           </div>
-        </div>
+
+          {/* Mobile Dropdown Menu Drawer */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden border-b border-slate-200 pb-4 pt-2 flex flex-col space-y-2">
+              <Link
+                to="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-full text-center text-xs font-bold text-slate-700 hover:text-slate-950 py-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors focus:outline-none"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/signup"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-full text-center text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg shadow-md shadow-indigo-600/10 transition-colors focus:outline-none"
+              >
+                Create Sandbox Account
+              </Link>
+            </div>
+          )}
+        </>
       )}
 
       {/* Page Header toolbar */}
