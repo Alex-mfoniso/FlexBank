@@ -328,7 +328,7 @@ describe("Ledger double-entry integration tests", () => {
       expect(response.status).toBe(404);
     });
 
-    it("should prevent cross-project transfers", async () => {
+    it("should successfully complete a cross-project transfer", async () => {
       const response = await request(app)
         .post("/api/v1/ledger/transfers")
         .set("Authorization", `Bearer ${apiKeyA}`)
@@ -339,6 +339,22 @@ describe("Ledger double-entry integration tests", () => {
           amount: 1000,
           currency: "NGN",
           reference: "ref_cross",
+        });
+
+      expect(response.status).toBe(201);
+    });
+
+    it("should strictly prevent debiting an account belonging to another project", async () => {
+      const response = await request(app)
+        .post("/api/v1/ledger/transfers")
+        .set("Authorization", `Bearer ${apiKeyA}`) // Authorized on Project A only
+        .set("Idempotency-Key", "idemp_cross_fail")
+        .send({
+          sourceAccountId: accountB1Id, // Belongs to Project B!
+          destinationAccountId: accountA1Id,
+          amount: 1000,
+          currency: "NGN",
+          reference: "ref_cross_fail",
         });
 
       expect(response.status).toBe(404);

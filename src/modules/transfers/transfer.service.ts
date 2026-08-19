@@ -115,8 +115,8 @@ export class TransferService {
       // 3. Handle Internal Transfer Flow
       if (input.type === "internal") {
         const destAccountId = input.destinationAccountId!;
-        const destAcc = await tx.account.findFirst({
-          where: { id: destAccountId, projectId },
+        const destAcc = await tx.account.findUnique({
+          where: { id: destAccountId },
         });
         if (!destAcc) {
           throw new AccountNotFoundError(`Destination account ${destAccountId} not found`);
@@ -135,7 +135,7 @@ export class TransferService {
         }
 
         const sourceLedger = await this.resolveOrCreateLedgerAccount(input.sourceAccountId, projectId, tx);
-        const destLedger = await this.resolveOrCreateLedgerAccount(destAccountId, projectId, tx);
+        const destLedger = await this.resolveOrCreateLedgerAccount(destAccountId, destAcc.projectId, tx);
 
         // Check sufficient available balance
         const credits = await this.ledgerRepo.sumLedgerEntries(sourceLedger.id, "credit", tx);
@@ -219,6 +219,11 @@ export class TransferService {
         // Dispatch webhooks asynchronously
         WebhookService.dispatch(projectId, "transfer.created", transfer);
         WebhookService.dispatch(projectId, "transfer.success", transfer);
+
+        if (destAcc.projectId !== projectId) {
+          WebhookService.dispatch(destAcc.projectId, "transfer.success", transfer);
+          WebhookService.dispatch(destAcc.projectId, "ledger.transaction.created", journal);
+        }
 
         return transfer;
       }
@@ -636,7 +641,17 @@ export class TransferService {
    */
   async getTransfer(transferId: string, projectId: string): Promise<Transfer> {
     const transfer = await prisma.transfer.findFirst({
-      where: { id: transferId, projectId },
+      where: {
+        id: transferId,
+        OR: [
+          { projectId },
+          {
+            destinationAccount: {
+              projectId,
+            },
+          },
+        ],
+      },
       include: { beneficiary: true },
     });
     if (!transfer) {

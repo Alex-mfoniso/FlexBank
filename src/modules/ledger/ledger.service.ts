@@ -131,9 +131,9 @@ export class LedgerService {
     }
     Money.assertSameCurrency(sourceAcc.currency, params.currency);
 
-    // 2. Fetch and validate destination financial account
-    const destAcc = await prisma.account.findFirst({
-      where: { id: params.destinationAccountId, projectId: params.projectId },
+    // 2. Fetch and validate destination financial account globally
+    const destAcc = await prisma.account.findUnique({
+      where: { id: params.destinationAccountId },
     });
     if (!destAcc) {
       throw new AccountNotFoundError(`Destination account ${params.destinationAccountId} not found`);
@@ -158,7 +158,7 @@ export class LedgerService {
       }
 
       const sourceLedger = await this.resolveOrCreateLedgerAccount(params.sourceAccountId, params.projectId, tx);
-      const destLedger = await this.resolveOrCreateLedgerAccount(params.destinationAccountId, params.projectId, tx);
+      const destLedger = await this.resolveOrCreateLedgerAccount(params.destinationAccountId, destAcc.projectId, tx);
 
       // Verify sufficient funds
       const availableBalance = await this.calculateBalance(sourceLedger.id, params.projectId, tx);

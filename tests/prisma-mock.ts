@@ -452,8 +452,41 @@ export const prismaMock = {
       return j;
     }),
     findFirst: vi.fn(async (args) => {
-      const { id, projectId } = args.where;
-      const j = store.journals.find((x) => x.id === id && x.projectId === projectId);
+      const where = args.where || {};
+      const id = where.id;
+      const reference = where.reference;
+      
+      let projId = where.projectId;
+      let checkOr = false;
+      let orList = where.OR;
+
+      if (orList && Array.isArray(orList)) {
+        checkOr = true;
+        const firstOr = orList[0] || {};
+        if (firstOr.projectId) {
+          projId = firstOr.projectId;
+        }
+      }
+
+      const j = store.journals.find((x) => {
+        if (id && x.id !== id) return false;
+        if (reference && x.reference !== reference) return false;
+
+        if (projId) {
+          if (checkOr) {
+            const entries = store.ledgerEntries.filter((e) => e.journalId === x.id);
+            const ledgerAccountIds = entries.map((e) => e.ledgerAccountId);
+            const hasInvolvedEntry = store.ledgerAccounts.some(
+              (la) => ledgerAccountIds.includes(la.id) && la.projectId === projId,
+            );
+            return x.projectId === projId || hasInvolvedEntry;
+          } else {
+            return x.projectId === projId;
+          }
+        }
+        return true;
+      });
+
       if (!j) return null;
       if (args.include?.entries) {
         return {
@@ -583,18 +616,28 @@ export const prismaMock = {
       const { id, reference, providerReference, projectId } = args?.where || {};
       const OR = args?.where?.OR;
       const t = store.transfers.find((x) => {
-        if (projectId && x.projectId !== projectId) return false;
-        if (id && x.id === id) return true;
-        if (reference && x.reference === reference) return true;
-        if (providerReference && x.providerReference === providerReference) return true;
+        if (id && x.id !== id) return false;
+        if (reference && x.reference !== reference) return false;
+        if (providerReference && x.providerReference !== providerReference) return false;
+
+        if (projectId) {
+          return x.projectId === projectId;
+        }
+
         if (OR) {
           return OR.some((cond: any) => {
+            if (cond.projectId && x.projectId === cond.projectId) return true;
+            if (cond.destinationAccount?.projectId && x.destinationAccountId) {
+              const destAcc = store.accounts.find((a) => a.id === x.destinationAccountId);
+              if (destAcc && destAcc.projectId === cond.destinationAccount.projectId) return true;
+            }
             if (cond.providerReference && x.providerReference === cond.providerReference) return true;
             if (cond.reference && x.reference === cond.reference) return true;
             return false;
           });
         }
-        return false;
+
+        return true;
       });
       if (!t) return null;
       if (args?.include?.beneficiary) {

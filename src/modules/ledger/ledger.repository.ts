@@ -114,6 +114,7 @@ export class LedgerRepository {
 
   /**
    * Finds a Journal by ID and eager-loads its ledger entries.
+   * Supports retrieving a transaction if the project context is either the initiator or has a ledger entry party.
    */
   async findJournalById(
     id: string,
@@ -121,7 +122,21 @@ export class LedgerRepository {
     tx: Prisma.TransactionClient = prisma,
   ): Promise<(Journal & { entries: LedgerEntry[] }) | null> {
     return tx.journal.findFirst({
-      where: { id, projectId },
+      where: {
+        id,
+        OR: [
+          { projectId },
+          {
+            entries: {
+              some: {
+                ledgerAccount: {
+                  projectId,
+                },
+              },
+            },
+          },
+        ],
+      },
       include: {
         entries: true,
       },
@@ -130,18 +145,28 @@ export class LedgerRepository {
 
   /**
    * Finds a Journal by unique client-provided reference inside a project context.
+   * Also supports recipient projects finding the journal by its reference.
    */
   async findJournalByReference(
     reference: string,
     projectId: string,
     tx: Prisma.TransactionClient = prisma,
   ): Promise<(Journal & { entries: LedgerEntry[] }) | null> {
-    return tx.journal.findUnique({
+    return tx.journal.findFirst({
       where: {
-        projectId_reference: {
-          projectId,
-          reference,
-        },
+        reference,
+        OR: [
+          { projectId },
+          {
+            entries: {
+              some: {
+                ledgerAccount: {
+                  projectId,
+                },
+              },
+            },
+          },
+        ],
       },
       include: {
         entries: true,

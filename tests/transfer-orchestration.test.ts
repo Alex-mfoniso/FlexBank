@@ -246,22 +246,100 @@ describe("Payment & Transfer Orchestration integration tests", () => {
       expect(res.body.error.code).toBe("INSUFFICIENT_FUNDS");
     });
 
-    it("prevents transfers between accounts in different projects", async () => {
+    it("successfully completes a cross-project transfer and updates both account balances", async () => {
+      // 1. Project A sends 100,000 minor units (₦1,000) to Project B's Account
       const res = await request(app)
         .post("/api/v1/transfers")
-        .set("Authorization", `Bearer ${apiKeyA}`) // Authorized on project A
-        .set("Idempotency-Key", "idem_cross_proj")
+        .set("Authorization", `Bearer ${apiKeyA}`)
+        .set("Idempotency-Key", `idem_cross_proj_${Date.now()}`)
         .send({
           type: "internal",
           sourceAccountId: accountA1Id,
-          destinationAccountId: accountB1Id, // Belongs to Project B!
+          destinationAccountId: accountB1Id, // Belongs to Project B
+          amount: 100000,
+          currency: "NGN",
+          reference: "ref_cross_proj_test_1",
+        })
+        .expect(201);
+
+      expect(res.body.status).toBe("success");
+      expect(res.body.transfer.status).toBe("successful");
+
+      // Verify updated cash balance projections in memory
+      const source = mockStore.accounts.find((x) => x.id === accountA1Id);
+      const destination = mockStore.accounts.find((x) => x.id === accountB1Id);
+
+      expect(source.available).toBe(900000);
+      expect(destination.available).toBe(100000);
+
+      // 2. Verify that Project B can securely query this transaction journal since they are involved
+      const journal = mockStore.journals.find((j) => j.reference === "ref_cross_proj_test_1");
+      expect(journal).toBeDefined();
+      const journalId = journal.id;
+
+      const getTxRes = await request(app)
+        .get(`/api/v1/transactions/${journalId}`)
+        .set("Authorization", `Bearer ${apiKeyB}`)
+        .expect(200);
+
+      expect(getTxRes.body.transaction).toBeDefined();
+      expect(getTxRes.body.transaction.entries).toHaveLength(2);
+
+      // 3. Verify that Developer B can transfer some funds (e.g., 50,000) back to Developer A
+      const reversalRes = await request(app)
+        .post("/api/v1/transfers")
+        .set("Authorization", `Bearer ${apiKeyB}`)
+        .set("Idempotency-Key", `idem_cross_proj_rev_${Date.now()}`)
+        .send({
+          type: "internal",
+          sourceAccountId: accountB1Id, // Now source is B
+          destinationAccountId: accountA1Id, // Dest is A
+          amount: 50000,
+          currency: "NGN",
+          reference: "ref_cross_proj_test_2",
+        })
+        .expect(201);
+
+      expect(reversalRes.body.status).toBe("success");
+      expect(reversalRes.body.transfer.status).toBe("successful");
+
+      // Resolve fresh reference objects from mock database store as updates create new object spreads
+      const freshSource = mockStore.accounts.find((x) => x.id === accountA1Id);
+      const freshDestination = mockStore.accounts.find((x) => x.id === accountB1Id);
+
+      expect(freshSource.available).toBe(950000);
+      expect(freshDestination.available).toBe(50000);
+    });
+
+    it("enforces strict security boundaries on cross-project transfers", async () => {
+      // 1. Developer A must NOT be able to unauthorizedly debit Developer B's Account (use Account B as source)
+      const resDebit = await request(app)
+        .post("/api/v1/transfers")
+        .set("Authorization", `Bearer ${apiKeyA}`) // Authorized on project A only
+        .set("Idempotency-Key", "idem_unauthorized_debit")
+        .send({
+          type: "internal",
+          sourceAccountId: accountB1Id, // Belongs to Project B!
+          destinationAccountId: accountA1Id,
           amount: 10000,
           currency: "NGN",
-          reference: "ref_cross_proj",
+          reference: "ref_unauthorized_debit",
         })
-        .expect(404); // Destination account validation checks existence within Project A
+        .expect(404); // Should throw AccountNotFoundError for source account context
 
-      expect(res.body.error.code).toBe("ACCOUNT_NOT_FOUND");
+      expect(resDebit.body.error.code).toBe("ACCOUNT_NOT_FOUND");
+
+      // 2. Developer A must NOT be able to read Developer B's Account details directly
+      await request(app)
+        .get(`/api/v1/accounts/${accountB1Id}`)
+        .set("Authorization", `Bearer ${apiKeyA}`)
+        .expect(404);
+
+      // 3. Developer A must NOT be able to read Developer B's ledger history directly
+      await request(app)
+        .get(`/api/v1/accounts/${accountB1Id}/ledger`)
+        .set("Authorization", `Bearer ${apiKeyA}`)
+        .expect(404);
     });
   });
 
