@@ -12,7 +12,9 @@ import {
   Cpu,
   FolderKanban,
   FileCode,
-  Lock
+  Lock,
+  Menu,
+  X
 } from "lucide-react";
 import { CodeBlock } from "../components/CodeBlock";
 import logoImg from "../assets/logo.png";
@@ -111,6 +113,7 @@ const STEPS = [
 
 export const Landing: React.FC = () => {
   const [activeStep, setActiveStep] = useState(STEPS[0]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const token = localStorage.getItem("token");
 
@@ -127,7 +130,8 @@ export const Landing: React.FC = () => {
           </span>
         </div>
 
-        <nav className="flex items-center space-x-4 lg:space-x-8">
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-4 lg:space-x-8">
           {token ? (
             <Link 
               to="/projects" 
@@ -153,7 +157,55 @@ export const Landing: React.FC = () => {
             </>
           )}
         </nav>
+
+        {/* Mobile Hamburger Button */}
+        <div className="flex md:hidden">
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-900 hover:text-white focus:outline-none"
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </button>
+        </div>
       </header>
+
+      {/* Mobile Dropdown Menu Drawer */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-b border-slate-900 bg-slate-950 px-6 py-4 space-y-4">
+          {token ? (
+            <Link 
+              to="/projects" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center space-x-2 text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-all py-2"
+            >
+              <FolderKanban className="h-4.5 w-4.5" />
+              <span>Go to Console</span>
+            </Link>
+          ) : (
+            <div className="flex flex-col space-y-3">
+              <Link 
+                to="/login" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-sm font-bold text-slate-400 hover:text-slate-200 py-2 border-b border-slate-900"
+              >
+                Sign In
+              </Link>
+              <Link 
+                to="/signup" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2.5 text-center text-sm font-bold text-white shadow-sm transition-all"
+              >
+                Create Account
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 2. Hero Section */}
       <section className="px-6 lg:px-12 py-16 lg:py-24 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
