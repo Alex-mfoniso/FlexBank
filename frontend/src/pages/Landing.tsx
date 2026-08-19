@@ -237,7 +237,7 @@ export const Landing: React.FC = () => {
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              to="/login"
+              to="/docs"
               className="flex items-center justify-center space-x-2 rounded-xl border border-slate-800 bg-slate-900/30 hover:bg-slate-900/60 hover:text-white px-6 py-3.5 text-sm font-bold text-slate-400 transition-all"
             >
               <Terminal className="h-4 w-4 text-slate-500" />
