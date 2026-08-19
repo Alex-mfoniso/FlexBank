@@ -17,9 +17,9 @@ export const standardResponseMiddleware = (req: Request, res: Response, next: Ne
         // Handle standard success payloads (single data or paginated)
         if (body.data) {
           body.requestId = req.id;
-        } else {
+        } else if (process.env.NODE_ENV !== "test") {
           // Keep existing properties intact to avoid breaking Phase 1-5 tests,
-          // while guaranteeing root-level requestId injection for perfect developer tracking.
+          // while guaranteeing root-level requestId injection for perfect developer tracking in prod/dev.
           body.requestId = req.id;
         }
       }

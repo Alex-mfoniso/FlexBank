@@ -1,7 +1,8 @@
 import axios from "axios";
 
 // Centralized Backend URL resolver matching environmental definitions
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+export const FLEXBANK_API_URL = import.meta.env.VITE_FLEXBANK_API_URL || "https://flexbank.onrender.com";
+const BASE_URL = import.meta.env.VITE_API_URL || FLEXBANK_API_URL;
 
 export const api = axios.create({
   baseURL: BASE_URL,

@@ -34,23 +34,23 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
       setHasApiKey(hasKeys);
 
       // 2. Fetch API Logs
-      const logsResponse = await api.get(`/api/v1/projects/${projectId}/logs`);
-      const logs = logsResponse.data.logs || [];
+      const logsResponse = await api.get("/api/v1/logs");
+      const logs = logsResponse.data.data || [];
       setHasApiLog(logs.length > 0);
 
       // 3. Fetch Customers
-      const customersResponse = await api.get(`/api/v1/customers`);
+      const customersResponse = await api.get("/api/v1/customers");
       const customers = customersResponse.data.customers || [];
       setHasCustomer(customers.length > 0);
 
       // 4. Fetch Accounts
-      const accountsResponse = await api.get(`/api/v1/accounts`);
+      const accountsResponse = await api.get("/api/v1/accounts");
       const accounts = accountsResponse.data.accounts || [];
       setHasAccount(accounts.length > 0);
 
       // 5. Fetch Transfers
-      const transfersResponse = await api.get(`/api/v1/transfers`);
-      const transfers = transfersResponse.data.transfers || [];
+      const transfersResponse = await api.get("/api/v1/transfers");
+      const transfers = transfersResponse.data.data || [];
       setHasTransfer(transfers.length > 0);
     } catch (err) {
       console.error("Failed to dynamically resolve onboarding progress checklist metrics", err);

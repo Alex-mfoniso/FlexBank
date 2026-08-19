@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { api, playgroundApi } from "../lib/api";
+import { api, playgroundApi, FLEXBANK_API_URL } from "../lib/api";
 import { useApp } from "../context/AppContext";
 import { CodeBlock } from "../components/CodeBlock";
 import {
@@ -82,30 +82,58 @@ export const Docs: React.FC = () => {
       details: "FlexBank is a double-entry ledger database, digital banking wallet processor, and transaction simulator packaged under a clean REST JSON specification. Developers use FlexBank to build fintech products, digital wallets, double-entry systems, and platform payout engines without stitching multiple commercial providers together manually. This sandbox platform is fully operational and processes money, ledgers, transfers, and webhooks in minor currency units."
     },
     {
+      id: "api-base-urls",
+      category: "GETTING STARTED",
+      title: "2. API Base Gateways",
+      description: "Understand the environment-scoped base URLs and gateway host configurations.",
+      details: `FlexBank hosts separate, strictly isolated API gateways for development/testing and live production processing.
+
+### Gateway Hosts
+
+* **Sandbox / Test Environment**:
+  \`${FLEXBANK_API_URL}\` (Active & operational for sandbox testing)
+* **Live / Production Environment**:
+  \`https://api.flexbank.ng\` (Setup Pending / Inactive)
+
+> [!NOTE]
+> All REST requests to these hosts require proper environment-scoped API Keys passed via Bearer authorization headers and valid project context headers.
+
+---
+
+### Quickstart Integration Steps
+
+Follow this 4-step guide to run your first request against the gateway:
+
+1. **Workspace Provisioning**: Complete your dashboard registration and locate the default test project workspace.
+2. **Retrieve API Credentials**: Navigate to Developer Tools > API Keys and generate your test secret key prefix (e.g. \`fb_test_...\`).
+3. **Establish Authorization Headers**: Set the headers: \`Authorization: Bearer <your_api_key>\` and \`x-project-id: <your_project_id>\`.
+4. **Dispatch Sandbox cURL Request**: Use the Interactive Playground on the right panel or run cURL integrations directly against the Test base URL gateway.`
+    },
+    {
       id: "quickstart",
       category: "GETTING STARTED",
-      title: "2. 7-Step Quickstart",
+      title: "3. 7-Step Quickstart",
       description: "Understand the end-to-end integration lifecycle from project initialization to sandbox transfer settlements.",
       details: "To achieve active integration, complete the following 7 steps:\n\n1. **Sign Up**: Register your developer profile.\n2. **Create Project Workspace**: Initialize an isolated platform ledger.\n3. **Retrieve Credentials**: Generate an API Key under Developer Tools.\n4. **Verify Connectivity**: Fetch your project workspace metadata via `GET /api/v1/projects/:id`.\n5. **Register Customer**: Spawn individual or corporate ledgers via `POST /api/v1/customers`.\n6. **Issue Account**: Provision virtual currency accounts via `POST /api/v1/accounts`.\n7. **Simulate Funding**: Use sandbox controls to fund test wallets, then dispatch double-entry settlements using `POST /api/v1/transfers`."
     },
     {
       id: "authentication",
       category: "GETTING STARTED",
-      title: "3. Authentication",
+      title: "4. Authentication",
       description: "Secure REST channels using standard Bearer token authorization schemes.",
       details: "FlexBank authenticates REST requests using workspace API Keys. Pass your secret key inside the Authorization header. Private keys are environment-scoped: keys starting with `fb_test_` operate strictly in the Test Environment, and keys starting with `fb_live_` run live processes.\n\nExample Header:\n`Authorization: Bearer fb_test_7f92ac81bc0...`"
     },
     {
       id: "webhook-verification",
       category: "GETTING STARTED",
-      title: "4. Webhook Signatures",
+      title: "5. Webhook Signatures",
       description: "Validate digital event deliveries using cryptographic HMAC SHA256 signatures.",
       details: "To prevent spoofing or replay attacks, verify webhook bodies using the `x-flexbank-signature` header. FlexBank computes an HMAC hex signature of the raw JSON body using your webhook subscription's signing secret.\n\nPython Signature Validation Sample:\n```python\nimport hmac\nimport hashlib\n\ndef verify_signature(payload_body, header_sig, secret):\n    expected = hmac.new(\n        secret.encode(),\n        payload_body.encode(),\n        hashlib.sha256\n    ).hexdigest()\n    return hmac.compare_digest(expected, header_sig)\n```"
     },
     {
       id: "errors",
       category: "GETTING STARTED",
-      title: "5. Error Handling",
+      title: "6. Error Handling",
       description: "Review HTTP error response schemas, parameter codes, and diagnostic formats.",
       details: "FlexBank returns standard HTTP status codes. Failures include a detailed diagnostic JSON envelope detailing parameter faults and validation violations:\n\n* **`400 Bad Request`**: Malformed payload, invalid types, or failed validations.\n* **`401 Unauthorized`**: Token missing, revoked, or invalid.\n* **`403 Forbidden`**: Access restricted to resources outside organization boundaries.\n* **`404 Not Found`**: Entity does not exist.\n* **`409 Conflict`**: Idempotency key collision or double-entry imbalance.\n* **`422 Unprocessable`**: Business logic constraints violated (e.g. frozen account, insufficient funds)."
     },
@@ -124,7 +152,7 @@ export const Docs: React.FC = () => {
         phone: "+2348123456789"
       }, null, 2),
       playPath: "/api/v1/customers",
-      curlSnippet: `curl -X POST "http://localhost:4000/api/v1/customers" \\
+      curlSnippet: `curl -X POST "\${FLEXBANK_API_URL}/api/v1/customers" \\
   -H "Authorization: Bearer fb_test_xxxxxxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -143,7 +171,7 @@ export const Docs: React.FC = () => {
       description: "Retrieve a paginated index of customer profiles registered in your active workspace.",
       details: "Fetches up to 50 customer profiles per page, ordered chronologically by creation timestamp.",
       playPath: "/api/v1/customers",
-      curlSnippet: `curl -X GET "http://localhost:4000/api/v1/customers" \\
+      curlSnippet: `curl -X GET "\${FLEXBANK_API_URL}/api/v1/customers" \\
   -H "Authorization: Bearer fb_test_xxxxxxxxxxxxxxxx"`
     },
     {
@@ -160,7 +188,7 @@ export const Docs: React.FC = () => {
         name: "Acme Operating Wallet"
       }, null, 2),
       playPath: "/api/v1/accounts",
-      curlSnippet: `curl -X POST "http://localhost:4000/api/v1/accounts" \\
+      curlSnippet: `curl -X POST "\${FLEXBANK_API_URL}/api/v1/accounts" \\
   -H "Authorization: Bearer fb_test_xxxxxxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -178,7 +206,7 @@ export const Docs: React.FC = () => {
       description: "Query and view the complete ledger account registry inside your project context.",
       details: "Lists all digital accounts, displaying active balances, minor currencies, and current compliance freeze states.",
       playPath: "/api/v1/accounts",
-      curlSnippet: `curl -X GET "http://localhost:4000/api/v1/accounts" \\
+      curlSnippet: `curl -X GET "\${FLEXBANK_API_URL}/api/v1/accounts" \\
   -H "Authorization: Bearer fb_test_xxxxxxxxxxxxxxxx"`
     },
     {
@@ -196,7 +224,7 @@ export const Docs: React.FC = () => {
         description: "Integration sandbox test payment"
       }, null, 2),
       playPath: "/api/v1/transfers",
-      curlSnippet: `curl -X POST "http://localhost:4000/api/v1/transfers" \\
+      curlSnippet: `curl -X POST "\${FLEXBANK_API_URL}/api/v1/transfers" \\
   -H "Authorization: Bearer fb_test_xxxxxxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -219,7 +247,7 @@ export const Docs: React.FC = () => {
         amount: 1000000
       }, null, 2),
       playPath: "/api/v1/sandbox/fund",
-      curlSnippet: `curl -X POST "http://localhost:4000/api/v1/sandbox/fund" \\
+      curlSnippet: `curl -X POST "\${FLEXBANK_API_URL}/api/v1/sandbox/fund" \\
   -H "Authorization: Bearer fb_test_xxxxxxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
-import { api } from "../lib/api";
+import { api, FLEXBANK_API_URL } from "../lib/api";
 import { formatMoney, formatDate } from "../utils/format";
 import { StatusBadge } from "../components/StatusBadge";
 import { CardSkeleton, SkeletonLoader } from "../components/SkeletonLoader";
@@ -18,6 +18,9 @@ import {
   ArrowRight,
   Beaker,
   ExternalLink,
+  Copy,
+  Check,
+  Globe,
 } from "lucide-react";
 
 interface OverviewMetrics {
@@ -38,6 +41,13 @@ export const Overview: React.FC = () => {
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     if (!selectedProjectId) return;
@@ -190,6 +200,60 @@ export const Overview: React.FC = () => {
           <div className="mt-4 text-[11px] font-semibold text-slate-400 flex justify-between">
             <span className="text-emerald-600">Succeeded: {metrics.successfulTransfersCount}</span>
             <span className="text-rose-500">Failed: {metrics.failedTransfersCount}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* API Configuration & Connection Parameters Widget */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-start space-x-3.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+              <Globe className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">API Base Connection Parameters</h3>
+              <p className="text-[10px] text-slate-400 font-semibold leading-normal max-w-lg">
+                Direct your application's SDK clients, server integrations, or cURL requests to this root gateway address.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+            {/* Environment Badge */}
+            <div className="flex flex-col space-y-1 items-start sm:items-end">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Gateway Env</span>
+              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase border ${
+                environment === "test"
+                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                  : "bg-rose-50 text-rose-700 border-rose-200"
+              }`}>
+                {environment} Environment
+              </span>
+            </div>
+
+            {/* Base URL & Copy Control */}
+            <div className="flex flex-col space-y-1 items-start sm:items-end flex-1 sm:flex-initial">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Base URL Gateway</span>
+              <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-lg p-1 px-2 text-xs font-mono select-all">
+                <span className={`font-semibold ${environment === "test" ? "text-slate-700" : "text-slate-400"}`}>
+                  {environment === "test" ? FLEXBANK_API_URL : "Not configured / Pending setup"}
+                </span>
+                {environment === "test" && (
+                  <button
+                    onClick={() => handleCopyUrl(FLEXBANK_API_URL)}
+                    className="p-1 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 focus:outline-none transition-all"
+                    title="Copy API Base URL"
+                  >
+                    {copied ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

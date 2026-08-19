@@ -14,22 +14,24 @@ export const apiLoggerMiddleware = (req: Request, res: Response, next: NextFunct
     const context = req.apiKeyContext;
 
     // Persist API request log in the background
-    prisma.apiRequestLog
-      .create({
-        data: {
-          requestId: req.id,
-          method: req.method,
-          path: req.baseUrl + req.path, // Capture the full prefix path
-          statusCode: res.statusCode,
-          projectId: context?.projectId || null,
-          environment: context?.environment || null,
-          duration,
-        },
-      })
-      .catch((err) => {
-        // Prevent request logging database failures from affecting any clients
-        logger.error({ err, requestId: req.id }, "Error saving apiRequestLog entry to database");
-      });
+    if (prisma.apiRequestLog) {
+      prisma.apiRequestLog
+        .create({
+          data: {
+            requestId: req.id,
+            method: req.method,
+            path: req.baseUrl + req.path, // Capture the full prefix path
+            statusCode: res.statusCode,
+            projectId: context?.projectId || null,
+            environment: context?.environment || null,
+            duration,
+          },
+        })
+        .catch((err) => {
+          // Prevent request logging database failures from affecting any clients
+          logger.error({ err, requestId: req.id }, "Error saving apiRequestLog entry to database");
+        });
+    }
   });
 
   next();
