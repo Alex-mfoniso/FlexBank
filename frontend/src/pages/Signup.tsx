@@ -56,6 +56,7 @@ export const Signup: React.FC = () => {
         name: `${user.firstName} ${user.lastName}`,
         status: user.status,
         createdAt: user.createdAt,
+        memberships: user.memberships,
       };
 
       login(token, formattedUser);
