@@ -216,7 +216,7 @@ Follow this 4-step guide to run your first request against the gateway:
       endpoint: "/api/v1/transfers",
       method: "POST",
       description: "Settle and record financial double-entry ledger settlements.",
-      details: "Transfers require minor units money specifications (e.g. 500000 equals ₦5,000.00). Settle money instantly across workspace accounts with complete audit trails.",
+      details: "Transfers require minor units money specifications (e.g. 500000 equals ₦5,000.00). Settle money instantly across workspace accounts. In the sandbox environment, you can also transfer funds directly to other developers' accounts across projects for collaborative testing.",
       defaultPayload: JSON.stringify({
         sourceAccountId: "INSERT_SOURCE_ACCOUNT_ID",
         destinationAccountId: "INSERT_DEST_ACCOUNT_ID",
