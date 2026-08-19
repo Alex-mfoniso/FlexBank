@@ -144,6 +144,14 @@ router.post(
           lastName: user.lastName,
           status: user.status,
           createdAt: user.createdAt,
+          memberships: [
+            {
+              organizationId: organization.id,
+              role: "owner",
+              organizationName: organization.name,
+              organizationSlug: organization.slug,
+            },
+          ],
         },
         token,
       });
@@ -174,6 +182,13 @@ router.post("/login", authRateLimiter, async (req: Request, res: Response, next:
 
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
+      include: {
+        memberships: {
+          include: {
+            organization: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -211,6 +226,12 @@ router.post("/login", authRateLimiter, async (req: Request, res: Response, next:
         lastName: user.lastName,
         status: user.status,
         createdAt: user.createdAt,
+        memberships: user.memberships.map((m) => ({
+          organizationId: m.organizationId,
+          role: m.role,
+          organizationName: m.organization.name,
+          organizationSlug: m.organization.slug,
+        })),
       },
       token,
     });
