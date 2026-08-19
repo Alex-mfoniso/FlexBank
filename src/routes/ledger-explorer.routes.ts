@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
-import { authenticateApiKey } from "../middleware/auth";
+import { authenticateUserOrApiKey, resolveProjectContext } from "../middleware/auth";
 import { z } from "zod";
 import { ValidationError, NotFoundError } from "../lib/errors";
 
@@ -16,7 +16,7 @@ const querySchema = z.object({
  * Exposes a detailed list of double-entry ledger bookings for a specific wallet.
  * Scoped securely to the authenticated project. Includes parent transaction details.
  */
-router.get("/accounts/:accountId/ledger", authenticateApiKey, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/accounts/:accountId/ledger", authenticateUserOrApiKey, resolveProjectContext, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { accountId } = req.params;
     const context = req.apiKeyContext!;

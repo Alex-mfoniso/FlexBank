@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { SandboxService } from "./sandbox.service";
-import { authenticateApiKey } from "../../middleware/auth";
+import { authenticateUserOrApiKey, resolveProjectContext } from "../../middleware/auth";
 import { ValidationError, ForbiddenError } from "../../lib/errors";
 
 const router = Router();
@@ -14,8 +14,8 @@ const simulateSchema = z.object({
   scenario: z.enum(["settled", "successful_transfer", "provider_rejected", "failed_transfer", "provider_timeout"]),
 });
 
-// Enforce Developer API Key authentication globally for all sandbox routes
-router.use(authenticateApiKey);
+// Enforce Developer authentication globally for all sandbox routes supporting both user JWT and API keys
+router.use(authenticateUserOrApiKey, resolveProjectContext);
 
 // Global Sandbox Boundary guard
 router.use((req: Request, _res: Response, next: NextFunction) => {

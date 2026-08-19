@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import crypto from "crypto";
 import { prisma } from "../../lib/prisma";
-import { authenticateApiKey } from "../../middleware/auth";
+import { authenticateUserOrApiKey, resolveProjectContext } from "../../middleware/auth";
 import { ValidationError, NotFoundError } from "../../lib/errors";
 
 const router = Router();
@@ -16,8 +16,8 @@ const updateEndpointSchema = z.object({
   status: z.enum(["active", "disabled"]).optional(),
 });
 
-// Secure all webhook configuration routes under Project API Key authentication
-router.use(authenticateApiKey);
+// Secure all webhook configuration routes supporting both user JWT and API Key sessions
+router.use(authenticateUserOrApiKey, resolveProjectContext);
 
 /**
  * POST /api/v1/webhooks/endpoints

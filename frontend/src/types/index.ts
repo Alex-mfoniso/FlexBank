@@ -1,9 +1,17 @@
+export interface UserMembership {
+  organizationId: string;
+  role: string;
+  organizationName: string;
+  organizationSlug: string;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
   status: string;
   createdAt: string;
+  memberships?: UserMembership[];
 }
 
 export interface Organization {
