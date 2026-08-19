@@ -1,0 +1,43 @@
+services:
+  # 1. Express Backend API Service
+  - type: web
+    name: flexbank-backend
+    env: node
+    plan: free
+    buildCommand: npm install && npm run db:generate && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      
+      # Your live Supabase database URL (will sync directly from your .env)
+      - key: DATABASE_URL
+        sync: false
+
+      # Your remote Redis URL
+      - key: REDIS_URL
+        sync: false
+
+      # Render will automatically generate a highly secure 32-character signing key!
+      - key: JWT_SECRET
+        generateValue: true
+
+      # CORS link mapping: Allows your deployed frontend to communicate securely with your backend
+      - key: CORS_ORIGIN
+        value: https://flexbank-frontend.onrender.com
+
+  # 2. Vite React Frontend Static Site
+  - type: static
+    name: flexbank-frontend
+    env: static
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    publishPath: frontend/dist
+    envVars:
+      # Direct connection URL pointing to your deployed backend
+      - key: VITE_API_URL
+        value: https://flexbank-backend.onrender.com
