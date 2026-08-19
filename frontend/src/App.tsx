@@ -38,6 +38,7 @@ export const App: React.FC = () => {
         <Routes>
           {/* Public Home Landing page */}
           <Route path="/" element={<Landing />} />
+          <Route path="/docs" element={<Docs />} />
 
           {/* Public Auth routes */}
           <Route element={<PublicRoute />}>
