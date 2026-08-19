@@ -29,6 +29,7 @@ import { LogDetails } from "./pages/LogDetails";
 import { ApiKeys } from "./pages/ApiKeys";
 import { Sandbox } from "./pages/Sandbox";
 import { Docs } from "./pages/Docs";
+import { Settings } from "./pages/Settings";
 
 export const App: React.FC = () => {
   return (
@@ -58,6 +59,8 @@ export const App: React.FC = () => {
               <Route path="accounts/:id" element={<AccountDetails />} />
               <Route path="transfers" element={<Transfers />} />
               <Route path="transfers/:id" element={<TransactionDetails />} />
+              <Route path="transactions" element={<Transfers />} />
+              <Route path="transactions/:id" element={<TransactionDetails />} />
               <Route path="ledger" element={<Ledger />} />
               <Route path="webhooks" element={<Webhooks />} />
               <Route path="logs" element={<Logs />} />
@@ -65,6 +68,7 @@ export const App: React.FC = () => {
               <Route path="api-keys" element={<ApiKeys />} />
               <Route path="sandbox" element={<Sandbox />} />
               <Route path="docs" element={<Docs />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
           </Route>
 
