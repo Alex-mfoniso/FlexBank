@@ -4,6 +4,7 @@ import { useApp } from "../context/AppContext";
 import { api } from "../lib/api";
 import type { ApiErrorPayload } from "../lib/api";
 import { KeyRound, ShieldAlert, Terminal, HelpCircle } from "lucide-react";
+import logoImg from "../assets/logo.png";
 
 export const Login: React.FC = () => {
   const { login } = useApp();
@@ -55,9 +56,7 @@ export const Login: React.FC = () => {
         
         {/* Top Branding Section */}
         <div className="flex items-center space-x-3 z-10">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500 font-bold text-xl shadow-lg shadow-indigo-500/30">
-            F
-          </div>
+          <img src={logoImg} alt="FlexBank Logo" className="h-10 w-10 rounded-lg object-contain shadow-lg shadow-indigo-500/20" />
           <span className="text-xl font-bold tracking-tight">FlexBank</span>
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-indigo-400 border border-slate-700">
             Developer MVP
@@ -109,9 +108,7 @@ export const Login: React.FC = () => {
         <div className="mx-auto w-full max-w-md">
           {/* Logo only shown on small viewports */}
           <div className="flex items-center space-x-2 lg:hidden mb-8">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-600 font-bold text-white text-md">
-              F
-            </div>
+            <img src={logoImg} alt="FlexBank Logo" className="h-8 w-8 rounded-md object-contain" />
             <span className="text-lg font-bold tracking-tight text-slate-900">FlexBank</span>
           </div>
 

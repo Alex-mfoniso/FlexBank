@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate, Outlet, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { api } from "../lib/api";
+import logoImg from "../assets/logo.png";
 import {
   LayoutDashboard,
   Users,
@@ -244,9 +245,7 @@ export const Layout: React.FC = () => {
         {/* Sidebar Header Brand Logo */}
         <div className="flex h-16 items-center px-6 border-b border-slate-800">
           <Link to="/projects" className="flex items-center space-x-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-500 font-bold text-white text-md">
-              F
-            </div>
+            <img src={logoImg} alt="FlexBank Logo" className="h-8 w-8 rounded-md object-contain shadow-md shadow-indigo-500/10" />
             <span className="text-lg font-bold tracking-tight text-white">FlexBank</span>
             <span className="text-[10px] bg-slate-800 text-indigo-400 font-semibold px-1.5 py-0.5 rounded border border-slate-700">
               v0.1
@@ -548,9 +547,7 @@ export const Layout: React.FC = () => {
 
             {/* Sheet brand title logo */}
             <div className="flex items-center space-x-2.5 pb-6 border-b border-slate-800">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-500 font-bold text-white text-md">
-                F
-              </div>
+              <img src={logoImg} alt="FlexBank Logo" className="h-8 w-8 rounded-md object-contain" />
               <span className="text-lg font-bold text-white">FlexBank</span>
             </div>
 

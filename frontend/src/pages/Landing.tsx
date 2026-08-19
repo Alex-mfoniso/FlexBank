@@ -15,6 +15,7 @@ import {
   Lock
 } from "lucide-react";
 import { CodeBlock } from "../components/CodeBlock";
+import logoImg from "../assets/logo.png";
 
 // Interactive Steps Data for API Sandbox
 const STEPS = [
@@ -119,9 +120,7 @@ export const Landing: React.FC = () => {
       {/* 1. Global Navigation Bar */}
       <header className="sticky top-0 z-50 border-b border-slate-900 bg-slate-950/80 backdrop-blur-md px-6 lg:px-12 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-500 font-bold text-white text-md shadow-md shadow-indigo-500/20">
-            F
-          </div>
+          <img src={logoImg} alt="FlexBank Logo" className="h-8 w-8 rounded-md object-contain" />
           <span className="text-lg font-bold tracking-tight text-white">FlexBank</span>
           <span className="text-[9px] bg-slate-900 text-indigo-400 font-bold px-2 py-0.5 rounded border border-slate-800">
             PLATFORM
