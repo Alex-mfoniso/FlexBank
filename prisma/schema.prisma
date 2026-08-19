@@ -1,0 +1,472 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model SystemCheck {
+  id        String   @id @default(uuid())
+  status    String   @default("ok")
+  checkedAt DateTime @default(now())
+}
+
+enum UserStatus {
+  active
+  suspended
+}
+
+model User {
+  id           String               @id @default(uuid())
+  email        String               @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  status       UserStatus           @default(active)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  memberships  OrganizationMember[]
+  auditLogs    AuditLog[]
+
+  @@index([email])
+}
+
+model Organization {
+  id        String               @id @default(uuid())
+  name      String
+  slug      String               @unique
+  status    String               @default("active")
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  members   OrganizationMember[]
+  projects  Project[]
+
+  @@index([slug])
+}
+
+enum OrgRole {
+  owner
+  admin
+  developer
+  viewer
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  organizationId String
+  userId         String
+  role           OrgRole      @default(viewer)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+enum ProjectEnvironment {
+  test
+  live
+}
+
+model Project {
+  id             String             @id @default(uuid())
+  organizationId String
+  name           String
+  description    String?
+  environment    ProjectEnvironment @default(test)
+  status         String             @default("active")
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  apiKeys            ApiKey[]
+  customers          Customer[]
+  accounts           Account[]
+  ledgerAccounts     LedgerAccount[]
+  journals           Journal[]
+  idempotencyRecords IdempotencyRecord[]
+  transfers          Transfer[]
+  beneficiaries      Beneficiary[]
+  webhookEndpoints   WebhookEndpoint[]
+  sandboxEvents      SandboxEvent[]
+
+  @@index([organizationId])
+}
+
+model ApiKey {
+  id          String             @id @default(uuid())
+  projectId   String
+  name        String
+  keyPrefix   String             @unique
+  keyHash     String             @unique
+  environment ProjectEnvironment @default(test)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([keyPrefix])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+}
+
+enum CustomerStatus {
+  active
+  inactive
+}
+
+model Customer {
+  id          String         @id
+  projectId   String
+  externalId  String
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  status      CustomerStatus @default(active)
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  accounts    Account[]
+  transfers   Transfer[]
+
+  @@unique([externalId, projectId])
+  @@index([projectId])
+  @@index([externalId])
+  @@index([email])
+}
+
+enum AccountStatus {
+  active
+  frozen
+  closed
+}
+
+model Account {
+  id          String        @id
+  customerId  String
+  projectId   String
+  currency    String
+  status      AccountStatus @default(active)
+  name        String
+  available   Int           @default(0)
+  pending     Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  customer             Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  project              Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ledgerAccount        LedgerAccount?
+  sourceTransfers      Transfer[]     @relation("SourceTransfers")
+  destinationTransfers Transfer[]     @relation("DestinationTransfers")
+
+  @@index([projectId])
+  @@index([customerId])
+  @@index([status])
+  @@index([currency])
+}
+
+enum LedgerAccountType {
+  customer
+  asset
+  liability
+  revenue
+  expense
+  equity
+}
+
+enum LedgerAccountStatus {
+  active
+  frozen
+  closed
+}
+
+model LedgerAccount {
+  id                 String              @id
+  financialAccountId String?             @unique
+  projectId          String
+  currency           String
+  type               LedgerAccountType
+  status             LedgerAccountStatus @default(active)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  project            Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  financialAccount   Account?            @relation(fields: [financialAccountId], references: [id], onDelete: SetNull)
+  entries            LedgerEntry[]
+
+  @@index([projectId])
+  @@index([financialAccountId])
+}
+
+enum JournalStatus {
+  draft
+  posted
+  reversed
+}
+
+enum JournalType {
+  internal_transfer
+  adjustment
+}
+
+model Journal {
+  id                String        @id
+  projectId         String
+  reference         String
+  type              JournalType
+  status            JournalStatus @default(draft)
+  currency          String
+  description       String?
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  reversedJournalId String?       @unique
+  reversalJournalId String?       @unique
+
+  project           Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reversedJournal   Journal?      @relation("JournalReversal", fields: [reversedJournalId], references: [id], onDelete: SetNull)
+  reversalOf        Journal?      @relation("JournalReversal")
+
+  entries           LedgerEntry[]
+
+  @@unique([projectId, reference])
+  @@index([projectId])
+}
+
+enum EntryDirection {
+  debit
+  credit
+}
+
+model LedgerEntry {
+  id              String         @id
+  journalId       String
+  ledgerAccountId String
+  direction       EntryDirection
+  amount          Int
+  currency        String
+  createdAt       DateTime       @default(now())
+
+  journal         Journal        @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  ledgerAccount   LedgerAccount  @relation(fields: [ledgerAccountId], references: [id], onDelete: Cascade)
+
+  @@index([journalId])
+  @@index([ledgerAccountId])
+  @@index([createdAt])
+}
+
+enum IdempotencyStatus {
+  pending
+  completed
+  failed
+}
+
+model IdempotencyRecord {
+  id          String            @id @default(uuid())
+  projectId   String
+  key         String
+  requestHash String
+  status      IdempotencyStatus @default(pending)
+  response    Json?
+  resourceId  String?
+  createdAt   DateTime          @default(now())
+  expiresAt   DateTime
+
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, key])
+  @@index([projectId])
+}
+
+enum TransferStatus {
+  created
+  pending
+  processing
+  successful
+  failed
+  reversed
+  cancelled
+}
+
+enum TransferDirection {
+  outbound
+  inbound
+  internal
+}
+
+enum TransferType {
+  internal
+  external
+}
+
+model Transfer {
+  id                    String            @id
+  projectId             String
+  customerId            String?
+  sourceAccountId       String?
+  destinationAccountId  String?
+  beneficiaryId         String?
+  providerId            String?
+  providerReference     String?           @unique
+  reference             String
+  amount                Int
+  currency              String
+  status                TransferStatus    @default(created)
+  direction             TransferDirection
+  type                  TransferType
+  failureCode           String?
+  failureMessage        String?
+  metadata              Json?
+  completedAt           DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  project               Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  customer              Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  sourceAccount         Account?          @relation("SourceTransfers", fields: [sourceAccountId], references: [id], onDelete: SetNull)
+  destinationAccount    Account?          @relation("DestinationTransfers", fields: [destinationAccountId], references: [id], onDelete: SetNull)
+  beneficiary           Beneficiary?      @relation(fields: [beneficiaryId], references: [id], onDelete: SetNull)
+  providerTransactions  ProviderTransaction[]
+
+  @@unique([projectId, reference])
+  @@index([projectId])
+  @@index([customerId])
+  @@index([reference])
+  @@index([providerReference])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Beneficiary {
+  id            String    @id
+  projectId     String
+  type          String
+  bankCode      String?
+  accountNumber String?
+  accountName   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  transfers     Transfer[]
+
+  @@index([projectId])
+}
+
+model ProviderTransaction {
+  id                 String   @id @default(uuid())
+  transferId         String
+  provider           String
+  providerReference  String?
+  status             String
+  requestPayloadHash String?
+  responseMetadata   Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  transfer           Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  @@index([transferId])
+  @@index([providerReference])
+}
+
+model WebhookEvent {
+  id              String    @id @default(uuid())
+  provider        String
+  providerEventId String
+  eventType       String
+  status          String    @default("received")
+  payloadHash     String
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@unique([provider, providerEventId])
+  @@index([provider, providerEventId])
+}
+
+model WebhookEndpoint {
+  id          String             @id
+  projectId   String
+  url         String
+  status      String             @default("active") // "active", "disabled"
+  secret      String             @unique            // "whsec_xxxxxxxx"
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  deliveries  WebhookDelivery[]
+
+  @@index([projectId])
+}
+
+model WebhookDelivery {
+  id                String          @id
+  webhookEndpointId String
+  eventId           String          // "evt_xxxxxxxx"
+  eventType         String          // e.g. "customer.created"
+  status            String          @default("pending") // "pending", "delivered", "failed"
+  attempts          Int             @default(0)
+  responseStatus    Int?
+  payload           String          // raw signed json body
+  deliveredAt       DateTime?
+  nextRetryAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  endpoint          WebhookEndpoint @relation(fields: [webhookEndpointId], references: [id], onDelete: Cascade)
+
+  @@index([webhookEndpointId])
+  @@index([eventId])
+  @@index([status])
+}
+
+model ApiRequestLog {
+  id          String   @id @default(uuid())
+  projectId   String?
+  requestId   String   @unique
+  method      String
+  path        String
+  statusCode  Int
+  environment String?  // "test" or "live"
+  duration    Int      // in milliseconds
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@index([requestId])
+  @@index([createdAt])
+}
+
+model SandboxEvent {
+  id        String   @id
+  projectId String
+  scenario  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+
+

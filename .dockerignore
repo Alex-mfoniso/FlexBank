@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.git/
+.env
+.env.local
+.eslintcache
+npm-debug.log*
+*.md
+tests/
+Dockerfile
+docker-compose.yml
