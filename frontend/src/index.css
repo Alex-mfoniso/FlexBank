@@ -26,3 +26,88 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background-color: #cbd5e1; /* bg-slate-300 */
 }
+
+/* Premium Technical Grid & Glow System */
+.bg-grid-pattern {
+  background-size: 50px 50px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+}
+
+.bg-dot-pattern {
+  background-size: 24px 24px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* Animations for connection flows, pulses, and glows */
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(99, 102, 241, 0.15); box-shadow: 0 0 15px rgba(99, 102, 241, 0.02); }
+  50% { border-color: rgba(99, 102, 241, 0.35); box-shadow: 0 0 25px rgba(99, 102, 241, 0.08); }
+}
+
+.animate-border-glow {
+  animation: border-glow 6s infinite ease-in-out;
+}
+
+@keyframes line-flow {
+  0% { stroke-dashoffset: 24; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.animate-line-flow {
+  stroke-dasharray: 8, 4;
+  animation: line-flow 1.5s infinite linear;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(1.05); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s infinite ease-in-out;
+}
+
+@keyframes particle-drift {
+  0% { transform: translateY(0px) translateX(0px); opacity: 0.2; }
+  50% { transform: translateY(-20px) translateX(10px); opacity: 0.5; }
+  100% { transform: translateY(0px) translateX(0px); opacity: 0.2; }
+}
+
+.animate-particle-drift-1 {
+  animation: particle-drift 12s infinite ease-in-out;
+}
+
+.animate-particle-drift-2 {
+  animation: particle-drift 18s infinite ease-in-out -4s;
+}
+
+/* Reduced motion compliance */
+@media (prefers-reduced-motion: reduce) {
+  .animate-border-glow,
+  .animate-line-flow,
+  .animate-pulse-slow,
+  .animate-particle-drift-1,
+  .animate-particle-drift-2,
+  .scroll-fade-initial {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Scroll Entry Transition Utilities */
+.scroll-fade-initial {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-fade-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
