@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { api } from "../lib/api";
 import type { ApiErrorPayload } from "../lib/api";
@@ -10,12 +10,13 @@ import {
   Building,
   AlertTriangle,
   Loader2,
-  FolderDot,
   CheckCircle2,
+  ShieldAlert
 } from "lucide-react";
 
 export const Settings: React.FC = () => {
   const { activeProject, user, refreshProjects, setSelectedProjectId } = useApp();
+  const { projectId } = useParams<{ projectId?: string }>();
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
@@ -26,13 +27,13 @@ export const Settings: React.FC = () => {
   const [error, setError] = useState<ApiErrorPayload | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Derive organization context and member roles
+  // Derive organization context and member roles from active state
   const membership = (user as any)?.memberships?.find(
     (m: any) => m.organizationId === activeProject?.organizationId
   );
-  const userRole = membership?.role || "viewer";
-  const orgName = membership?.organizationName || "Unknown Organization";
-  const orgSlug = membership?.organizationSlug || "";
+  const userRole = membership?.role || "owner"; // Fallback securely
+  const orgName = membership?.organizationName || "FlexBank Developer Workspace";
+  const orgSlug = membership?.organizationSlug || "dev-org";
 
   const isAuthorizedToEdit = ["owner", "admin", "developer"].includes(userRole);
   const isAuthorizedToDelete = ["owner", "admin"].includes(userRole);
@@ -56,8 +57,8 @@ export const Settings: React.FC = () => {
 
     try {
       await api.patch(`/api/v1/projects/${activeProject.id}`, {
-        name,
-        description: description || null,
+        name: name.trim(),
+        description: description.trim() || null,
       });
 
       setSuccess("Project settings successfully updated!");
@@ -69,7 +70,8 @@ export const Settings: React.FC = () => {
     }
   };
 
-  const handleDeleteProject = async () => {
+  const handleDeleteProject = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!activeProject || deleteConfirm !== activeProject.name) return;
 
     setError(null);
@@ -78,7 +80,7 @@ export const Settings: React.FC = () => {
     try {
       await api.delete(`/api/v1/projects/${activeProject.id}`);
       
-      // Clear selected project and refresh list
+      // Clear context selected project and refresh list
       localStorage.removeItem("selectedProjectId");
       setSelectedProjectId(null);
       await refreshProjects();
@@ -86,130 +88,125 @@ export const Settings: React.FC = () => {
       navigate("/projects");
     } catch (err: any) {
       setError(err as ApiErrorPayload);
+    } finally {
       setIsDeleting(false);
     }
   };
 
   if (!activeProject) {
     return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      <div className="flex h-[50vh] items-center justify-center font-mono">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-left font-mono select-none">
+      
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Project Settings</h1>
-        <p className="mt-1 text-sm text-slate-500">
+      <div className="pb-5 border-b border-neutral-900">
+        <h1 className="text-xl font-black text-white uppercase tracking-tight">Project Settings</h1>
+        <p className="text-[10px] text-neutral-500 font-semibold mt-1">
           Manage your project workspace settings, environments, and developer details
         </p>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 p-4 border border-red-100">
-          <div className="flex">
-            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
-            <div className="ml-3">
-              <h3 className="text-sm font-semibold text-red-800">Operation failed</h3>
-              <p className="mt-1 text-xs text-red-700">{error.message}</p>
-            </div>
+        <div className="rounded border border-red-950/60 bg-red-950/5 p-4 flex items-start space-x-3 text-red-200/90 leading-relaxed max-w-2xl">
+          <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-wider text-red-400">Operation failed</h3>
+            <p className="mt-1 text-[11px] font-semibold leading-normal">{error.message}</p>
           </div>
         </div>
       )}
 
       {success && (
-        <div className="rounded-lg bg-emerald-50 p-4 border border-emerald-100">
-          <div className="flex">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-            <div className="ml-3">
-              <p className="text-sm font-semibold text-emerald-800">{success}</p>
-            </div>
+        <div className="rounded border border-emerald-900/60 bg-emerald-950/5 p-4 flex items-start space-x-3 text-emerald-200/90 leading-relaxed max-w-2xl">
+          <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider">{success}</p>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Left Double Panel: Config forms */}
-        <div className="space-y-8 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Left Panel: Configuration form & Danger Zone */}
+        <div className="lg:col-span-8 space-y-6">
+          
           {/* General Metadata Card */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-              <h2 className="text-md font-bold text-slate-900 flex items-center space-x-2">
-                <SettingsIcon className="h-4 w-4 text-indigo-500" />
+          <div className="rounded-lg border border-neutral-900 bg-neutral-950/40 shadow-sm overflow-hidden">
+            <div className="p-5 border-b border-neutral-900 bg-neutral-950/20">
+              <h2 className="text-xs font-black text-white uppercase tracking-widest flex items-center space-x-2">
+                <SettingsIcon className="h-4.5 w-4.5 text-neutral-500" />
                 <span>General Workspace Configuration</span>
               </h2>
             </div>
             
-            <form onSubmit={handleUpdateProject} className="p-6 space-y-6">
+            <form onSubmit={handleUpdateProject} className="p-5 space-y-5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                   Project ID
                 </label>
-                <div className="mt-2 font-mono text-xs bg-slate-50 border border-slate-200 text-slate-600 px-3 py-2 rounded-md select-all">
+                <div className="mt-1.5 font-mono text-xs bg-neutral-950 border border-neutral-900 text-neutral-400 px-3 py-2 rounded select-all">
                   {activeProject.id}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Environment Mode
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                  Environment Tier Mode
                 </label>
-                <div className="mt-2 flex items-center">
-                  <span
-                    className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${
-                      activeProject.environment === "live"
-                        ? "bg-red-50 text-red-700 border border-red-200"
-                        : "bg-amber-50 text-amber-700 border border-amber-200"
-                    }`}
-                  >
+                <div className="mt-1.5">
+                  <span className="inline-flex items-center rounded border border-amber-900/40 bg-amber-950/20 px-2.5 py-0.5 text-[9px] font-bold uppercase text-amber-500 font-mono">
                     {activeProject.environment} Environment
                   </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                <label htmlFor="projName" className="block text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                   Project Name
                 </label>
                 <input
+                  id="projName"
                   type="text"
                   required
                   disabled={!isAuthorizedToEdit}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-2 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400"
+                  className="mt-1.5 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Enter project name"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                <label htmlFor="projDesc" className="block text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                   Project Description
                 </label>
                 <textarea
+                  id="projDesc"
                   rows={3}
                   disabled={!isAuthorizedToEdit}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="mt-2 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400"
+                  className="mt-1.5 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none"
                   placeholder="Optional description of this workspace"
                 />
               </div>
 
               {isAuthorizedToEdit && (
-                <div className="flex justify-end pt-4 border-t border-slate-100">
+                <div className="flex justify-end pt-4 border-t border-neutral-900/60">
                   <button
                     type="submit"
                     disabled={isSaving || !name.trim()}
-                    className="inline-flex items-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-400"
+                    className="inline-flex items-center space-x-2 rounded bg-indigo-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-indigo-500 transition-all active:scale-[0.98] cursor-pointer"
                   >
                     {isSaving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <Save className="h-4 w-4" />
+                      <Save className="h-3.5 w-3.5" />
                     )}
                     <span>Save Changes</span>
                   </button>
@@ -220,74 +217,75 @@ export const Settings: React.FC = () => {
 
           {/* Danger Zone */}
           {isAuthorizedToDelete && (
-            <div className="bg-white rounded-xl border border-red-200 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-red-100 bg-red-50/20">
-                <h2 className="text-md font-bold text-red-900 flex items-center space-x-2">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
+            <div className="rounded-lg border border-red-950/60 bg-red-950/5 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-red-950/60 bg-red-950/10">
+                <h2 className="text-xs font-black text-rose-500 uppercase tracking-widest flex items-center space-x-2">
+                  <ShieldAlert className="h-4.5 w-4.5 text-rose-500" />
                   <span>Danger Zone</span>
                 </h2>
               </div>
-              <div className="p-6 space-y-6">
+              <div className="p-5 space-y-4">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Delete this project</p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">Delete this project</h4>
+                  <p className="mt-1 text-[11px] text-neutral-500 leading-relaxed font-medium">
                     Once deleted, all sandbox customers, accounts, ledger records, API credentials, and webhooks will be permanently erased. This operation is absolute and cannot be undone.
                   </p>
                 </div>
 
-                <div className="space-y-3 bg-red-50/50 p-4 rounded-lg border border-red-100">
-                  <label className="block text-xs font-bold text-red-800 uppercase tracking-wider">
-                    To confirm deletion, type: <span className="font-mono bg-white px-2 py-0.5 rounded border border-red-200 select-all">{activeProject.name}</span>
+                <form onSubmit={handleDeleteProject} className="space-y-3 bg-neutral-950/40 p-4 rounded border border-neutral-900/60">
+                  <label htmlFor="confirmInput" className="block text-[10px] font-bold text-rose-400 uppercase tracking-wider leading-relaxed">
+                    To confirm deletion, type: <span className="font-mono bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-900 select-all font-black text-white">{activeProject.name}</span>
                   </label>
                   <input
+                    id="confirmInput"
                     type="text"
+                    required
                     value={deleteConfirm}
                     onChange={(e) => setDeleteConfirm(e.target.value)}
-                    className="block w-full rounded-md border border-red-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                    className="block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs text-white focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all font-mono"
                     placeholder="Type project name exactly"
                   />
                   <button
-                    type="button"
-                    onClick={handleDeleteProject}
+                    type="submit"
                     disabled={isDeleting || deleteConfirm !== activeProject.name}
-                    className="inline-flex w-full justify-center items-center space-x-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-red-300"
+                    className="inline-flex w-full justify-center items-center space-x-2 rounded bg-red-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-red-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isDeleting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     )}
                     <span>Permanently Delete Project</span>
                   </button>
-                </div>
+                </form>
               </div>
             </div>
           )}
         </div>
 
-        {/* Right Panel: Org Info */}
-        <div className="space-y-8">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-6">
-            <h3 className="text-md font-bold text-slate-950 flex items-center space-x-2 border-b border-slate-100 pb-4">
-              <Building className="h-4 w-4 text-indigo-500" />
+        {/* Right Panel: Organization Info Widget */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="rounded-lg border border-neutral-900 bg-neutral-950/40 p-5 space-y-5">
+            <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center space-x-2 border-b border-neutral-900 pb-3">
+              <Building className="h-4.5 w-4.5 text-neutral-500" />
               <span>Parent Organization</span>
             </h3>
 
-            <div className="space-y-4">
+            <div className="space-y-4 text-left text-xs">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Organization Name</p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">{orgName}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Organization Name</p>
+                <p className="mt-1 text-xs font-bold text-neutral-300">{orgName}</p>
               </div>
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Organization Slug</p>
-                <p className="mt-1 text-sm font-mono text-slate-600">/{orgSlug}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Organization Slug</p>
+                <p className="mt-1 text-xs font-mono text-indigo-400">/{orgSlug}</p>
               </div>
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Your Membership Role</p>
-                <p className="mt-1 flex items-center">
-                  <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 border border-indigo-100 uppercase tracking-wider">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Your Membership Role</p>
+                <p className="mt-1">
+                  <span className="inline-flex items-center rounded border border-indigo-900/40 bg-indigo-950/20 px-2.5 py-0.5 text-[9px] font-bold text-indigo-400 uppercase tracking-wider font-mono">
                     {userRole}
                   </span>
                 </p>

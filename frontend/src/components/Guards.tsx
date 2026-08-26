@@ -8,10 +8,11 @@ export const PrivateRoute: React.FC<{ children?: React.ReactNode }> = ({ childre
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
-          <p className="text-sm font-medium text-slate-500">Initializing session...</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#030303] text-white relative">
+        <div className="absolute inset-0 opacity-5 bg-dot-pattern pointer-events-none" />
+        <div className="flex flex-col items-center space-y-4 relative z-10">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-neutral-900 border-t-indigo-600" />
+          <p className="text-xs font-bold text-neutral-500 font-mono uppercase tracking-widest">Initializing secure session...</p>
         </div>
       </div>
     );
@@ -30,10 +31,11 @@ export const PublicRoute: React.FC<{ children?: React.ReactNode }> = ({ children
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
-          <p className="text-sm font-medium text-slate-500">Redirecting...</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#030303] text-white relative">
+        <div className="absolute inset-0 opacity-5 bg-dot-pattern pointer-events-none" />
+        <div className="flex flex-col items-center space-y-4 relative z-10">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-neutral-900 border-t-indigo-600" />
+          <p className="text-xs font-bold text-neutral-500 font-mono uppercase tracking-widest">Redirecting secure session...</p>
         </div>
       </div>
     );

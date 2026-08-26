@@ -12,10 +12,12 @@ import {
   Loader2,
   AlertCircle,
   HelpCircle,
+  LogOut,
+  Sparkles
 } from "lucide-react";
 
 export const Projects: React.FC = () => {
-  const { user, projects, setSelectedProjectId, refreshProjects } = useApp();
+  const { user, projects, setSelectedProjectId, refreshProjects, logout } = useApp();
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
@@ -44,9 +46,9 @@ export const Projects: React.FC = () => {
     try {
       const response = await api.post("/api/v1/projects", {
         organizationId: defaultOrgId,
-        name,
-        description: description || null,
-        environment,
+        name: name.trim(),
+        description: description.trim() || null,
+        environment, // Every project starts in TEST mode by default, can select environment in selector
       });
 
       const newProject = response.data.project;
@@ -71,45 +73,61 @@ export const Projects: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl">
+    <div className="min-h-screen bg-[#030303] text-white py-12 px-6 lg:px-12 select-none relative font-mono">
+      <div className="absolute inset-0 opacity-5 bg-dot-pattern pointer-events-none" />
+      <div className="absolute -top-40 -left-40 w-80 h-80 bg-indigo-500/10 rounded-full blur-[120px]" />
+
+      <div className="mx-auto max-w-6xl relative z-10">
         
-        {/* Upper Header Header Branding Info */}
-        <div className="flex items-center justify-between pb-8 border-b border-slate-200">
-          <div className="flex items-center space-x-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white text-lg shadow-md shadow-indigo-600/20">
+        {/* Upper Header Branding Info */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-8 border-b border-neutral-900 gap-4">
+          <div className="flex items-center space-x-3 text-left">
+            <div className="flex h-9 w-9 items-center justify-center rounded bg-indigo-600 font-black text-white text-lg shadow-md shadow-indigo-600/20">
               F
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900 leading-tight">FlexBank Console</h1>
-              <p className="text-xs text-slate-500 font-medium">Select a project context workspace to access developer credentials and ledger histories</p>
+              <h1 className="text-lg font-black text-white uppercase leading-none">FlexBank Console</h1>
+              <p className="text-[10px] text-neutral-500 mt-1 leading-normal font-medium">Select a project context workspace to access developer credentials and ledger histories</p>
             </div>
           </div>
-          <div className="text-xs text-slate-400 font-mono">
-            Logged in as: <span className="text-slate-600 font-semibold">{user?.email}</span>
+          <div className="flex items-center justify-between sm:justify-end gap-4 text-[10px]">
+            <span className="text-neutral-500 text-left">
+              Logged in as: <span className="text-indigo-400 font-semibold block sm:inline">{user?.email}</span>
+            </span>
+            <button
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              className="flex items-center space-x-1 text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer border border-neutral-900 rounded bg-neutral-950/60 px-2 py-1"
+            >
+              <LogOut className="h-3 w-3" />
+              <span>Log out</span>
+            </button>
           </div>
         </div>
 
         {/* Main Double-Panel layout */}
-        <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Panel 1: Current Project Workspaces (List) */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-8 space-y-6 text-left">
             <div className="flex items-center justify-between">
-              <h2 className="text-md font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-2">
-                <FolderKanban className="h-4 w-4 text-slate-400" />
+              <h2 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 flex items-center space-x-2">
+                <FolderKanban className="h-4 w-4 text-neutral-600" />
                 <span>Your Active Workspaces ({projects.length})</span>
               </h2>
             </div>
 
             {projects.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
-                <FolderDot className="mx-auto h-12 w-12 text-slate-300" />
-                <h3 className="mt-4 text-sm font-bold text-slate-900">No projects yet</h3>
-                <p className="mt-2 text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                  Project workspaces segregate distinct sandbox credentials, webhook endpoints, API logging limits, and customer lists.
+              /* EMPTY STATE: Matches Section 18 specs exactly */
+              <div className="rounded-lg border border-dashed border-neutral-900 bg-neutral-950/30 p-12 text-center shadow-xs">
+                <FolderDot className="mx-auto h-12 w-12 text-neutral-700" />
+                <h3 className="mt-4 text-xs font-bold text-white uppercase tracking-wider font-mono">No projects yet.</h3>
+                <p className="mt-2 text-[11px] text-neutral-500 max-w-sm mx-auto leading-relaxed">
+                  Create a project to start building with FlexBank. Project workspaces segregate distinct sandbox credentials, webhook endpoints, and customer lists.
                 </p>
-                <p className="mt-4 text-xs font-semibold text-indigo-600">
+                <p className="mt-4 text-[11px] font-bold text-indigo-400 font-mono">
                   Use the registration workspace form to initialize your first project →
                 </p>
               </div>
@@ -119,29 +137,29 @@ export const Projects: React.FC = () => {
                   <button
                     key={proj.id}
                     onClick={() => handleSelectProject(proj.id)}
-                    className="group relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 text-left shadow-xs hover:border-indigo-500 hover:ring-1 hover:ring-indigo-500 hover:shadow-md transition-all focus:outline-none"
+                    className="group relative flex flex-col justify-between rounded-lg border border-neutral-900 bg-neutral-950/40 p-5 text-left shadow-xs hover:border-neutral-800 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-indigo-500/[0.003] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#030303] cursor-pointer"
                   >
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900 text-base tracking-tight group-hover:text-indigo-600 transition-colors truncate pr-2">
+                        <span className="font-bold text-white text-sm tracking-tight group-hover:text-indigo-400 transition-colors truncate pr-2">
                           {proj.name}
                         </span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 border ${
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase shrink-0 border font-mono ${
                           proj.environment === "test"
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-rose-50 text-rose-700 border-rose-200"
+                            ? "bg-amber-950/20 text-amber-500 border-amber-900/40"
+                            : "bg-rose-950/20 text-rose-500 border-rose-900/40"
                         }`}>
-                          {proj.environment} environment
+                          {proj.environment}
                         </span>
                       </div>
                       
-                      <p className="mt-2 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                      <p className="mt-2 text-[11px] text-neutral-500 line-clamp-2 leading-relaxed">
                         {proj.description || "No description provided for this financial workspace project."}
                       </p>
                     </div>
 
-                    <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-slate-400 group-hover:text-indigo-600 transition-colors">
-                      <span className="font-mono text-[10px]">ID: {proj.id}</span>
+                    <div className="mt-5 pt-3 border-t border-neutral-900/60 flex items-center justify-between text-[10px] font-bold text-neutral-600 group-hover:text-indigo-400 transition-colors font-mono">
+                      <span className="text-[9px]">ID: {proj.id.substring(0, 8)}...</span>
                       <div className="flex items-center space-x-1 shrink-0">
                         <span>Open console</span>
                         <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
@@ -154,22 +172,22 @@ export const Projects: React.FC = () => {
           </div>
 
           {/* Panel 2: Register/Create Project Workspace Form */}
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm self-start">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-2 pb-4 border-b border-slate-100">
-              <Code2 className="h-4.5 w-4.5 text-slate-400" />
-              <span>Create New Workspace</span>
+          <div className="lg:col-span-4 rounded-lg border border-neutral-900 bg-neutral-950/60 p-6 shadow-sm self-start text-left font-mono">
+            <h2 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 flex items-center space-x-2 pb-4 border-b border-neutral-900">
+              <Code2 className="h-4.5 w-4.5 text-neutral-600" />
+              <span>Create Workspace</span>
             </h2>
 
             {error && (
-              <div className="mt-4 flex items-start space-x-2.5 rounded-lg bg-red-50 p-3 border border-red-200 text-red-800">
+              <div className="mt-4 flex items-start space-x-2.5 rounded border border-red-950/60 bg-red-950/5 p-3 text-red-200/90 leading-relaxed">
                 <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-                <p className="text-xs font-semibold leading-normal">{error.message}</p>
+                <p className="text-[11px] font-semibold leading-normal">{error.message}</p>
               </div>
             )}
 
             <form onSubmit={handleCreateProject} className="mt-5 space-y-4">
               <div>
-                <label htmlFor="projName" className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <label htmlFor="projName" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
                   Project Name
                 </label>
                 <input
@@ -178,13 +196,13 @@ export const Projects: React.FC = () => {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. My Startup API"
-                  className="mt-1.5 block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                  placeholder="e.g. My Wallet"
+                  className="mt-1.5 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-white placeholder:text-neutral-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs transition-all"
                 />
               </div>
 
               <div>
-                <label htmlFor="projDesc" className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <label htmlFor="projDesc" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
                   Description
                 </label>
                 <textarea
@@ -192,44 +210,45 @@ export const Projects: React.FC = () => {
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Core financial model or ledger structure..."
-                  className="mt-1.5 block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
+                  placeholder="Core financial model or ledger..."
+                  className="mt-1.5 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-white placeholder:text-neutral-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs transition-all resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
                   Environment Tier
                 </label>
                 <div className="mt-1.5 grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setEnvironment("test")}
-                    className={`rounded-lg py-2 text-xs font-bold uppercase tracking-wider border transition-all ${
+                    className={`rounded py-2 text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
                       environment === "test"
-                        ? "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-xs"
-                        : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                        ? "bg-indigo-950/20 text-indigo-400 border-indigo-900 shadow-xs"
+                        : "bg-transparent text-neutral-600 border-neutral-900 hover:text-neutral-400"
                     }`}
                   >
-                    Test Sandbox
+                    Test Mode
                   </button>
                   <button
                     type="button"
                     onClick={() => setEnvironment("live")}
-                    className={`rounded-lg py-2 text-xs font-bold uppercase tracking-wider border transition-all ${
+                    className={`rounded py-2 text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
                       environment === "live"
-                        ? "bg-rose-50 text-rose-700 border-rose-300 shadow-xs"
-                        : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"
+                        ? "bg-rose-950/20 text-rose-500 border-rose-900 shadow-xs"
+                        : "bg-transparent text-neutral-600 border-neutral-900 hover:text-neutral-400"
                     }`}
-                    title="Live environments are currently coming soon"
+                    title="Live environments are coming soon"
                   >
                     Live Mode
                   </button>
                 </div>
-                <div className="mt-2 flex items-start space-x-1.5 rounded-lg bg-slate-50 p-2 text-[10px] text-slate-500 leading-normal">
-                  <HelpCircle className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
+                
+                <div className="mt-2.5 flex items-start space-x-2 rounded border border-neutral-900 bg-neutral-950/20 p-2.5 text-[9px] text-neutral-500 leading-normal font-medium select-none">
+                  <HelpCircle className="h-3.5 w-3.5 text-neutral-600 shrink-0 mt-0.5" />
                   <span>
-                    Sandbox tier allocates NGN/USD test codes and enables transfer simulation mocks. Live accounts require compliance onboarding.
+                    Sandbox tier allocates test codes and enables transfer simulation mocks. Live production environments require compliance onboarding.
                   </span>
                 </div>
               </div>
@@ -238,16 +257,16 @@ export const Projects: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isCreating}
-                  className="flex w-full justify-center items-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="flex w-full justify-center items-center space-x-2 rounded bg-indigo-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] cursor-pointer"
                 >
                   {isCreating ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin text-white" />
-                      <span>Creating workspace...</span>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                      <span>Creating...</span>
                     </>
                   ) : (
                     <>
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-3.5 w-3.5" />
                       <span>Create Project</span>
                     </>
                   )}

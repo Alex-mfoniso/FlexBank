@@ -1,26 +1,31 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { api, FLEXBANK_API_URL } from "../lib/api";
 import { formatMoney, formatDate } from "../utils/format";
-import { StatusBadge } from "../components/StatusBadge";
-import { CardSkeleton, SkeletonLoader } from "../components/SkeletonLoader";
-import { OnboardingChecklist } from "../components/OnboardingChecklist";
 import {
   Users,
   Wallet,
   ArrowUpRight,
   TrendingUp,
-  AlertOctagon,
+  AlertCircle,
   FileCode,
   Terminal,
   Activity,
   ArrowRight,
   Beaker,
-  ExternalLink,
   Copy,
   Check,
   Globe,
+  Loader2,
+  Clock,
+  ExternalLink,
+  Plus,
+  ShieldCheck,
+  CheckCircle2,
+  Circle,
+  HelpCircle,
+  AlertTriangle
 } from "lucide-react";
 
 interface OverviewMetrics {
@@ -33,12 +38,25 @@ interface OverviewMetrics {
 }
 
 export const Overview: React.FC = () => {
-  const { selectedProjectId, environment } = useApp();
+  const { environment, setEnvironment } = useApp();
+  const { projectId } = useParams<{ projectId?: string }>();
   const navigate = useNavigate();
 
+  // Local state metrics
+  const [activeProject, setActiveProject] = useState<any>(null);
   const [metrics, setMetrics] = useState<OverviewMetrics | null>(null);
   const [recentTransfers, setRecentTransfers] = useState<any[]>([]);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
+  const [isHealthCheckOk, setIsHealthCheckOk] = useState<boolean | null>(null);
+
+  // States to trace onboarding criteria accurately
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [hasCustomer, setHasCustomer] = useState(false);
+  const [hasAccount, setHasAccount] = useState(false);
+  const [hasTransfer, setHasTransfer] = useState(false);
+  const [hasWebhook, setHasWebhook] = useState(false);
+
+  // General state handlers
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -49,335 +67,510 @@ export const Overview: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  useEffect(() => {
-    if (!selectedProjectId) return;
+  const fetchOverviewData = async () => {
+    if (!projectId) return;
+    setIsLoading(true);
+    setError(null);
 
-    const fetchOverviewData = async () => {
-      setIsLoading(true);
-      setError(null);
+    try {
+      // 1. Fetch active project details authoritatively (Section 1)
+      const projectRes = await api.get(`/api/v1/projects/${projectId}`);
+      const proj = projectRes.data.project;
+      setActiveProject(proj);
 
+      // 2. Fetch API Keys configuration state (Section 13)
+      const keysResponse = await api.get(`/api/v1/projects/${projectId}/api-keys`);
+      const keys = keysResponse.data.apiKeys || [];
+      const hasKeys = keys.some((k: any) => !k.revokedAt);
+      setHasApiKey(hasKeys);
+
+      // 3. Fetch Webhooks configuration state (Section 13)
       try {
-        const [metricRes, transferRes, logRes] = await Promise.all([
-          api.get(`/api/v1/projects/${selectedProjectId}/overview`),
-          api.get("/api/v1/transfers"),
-          api.get("/api/v1/logs"),
-        ]);
-
-        setMetrics(metricRes.data.metrics);
-        setRecentTransfers((transferRes.data.data || []).slice(0, 5));
-        setRecentLogs((logRes.data.data || []).slice(0, 5));
-      } catch (err: any) {
-        console.error("Failed to load overview statistics", err);
-        setError(err.message || "Could not retrieve operational performance indicators.");
-      } finally {
-        setIsLoading(false);
+        const webhooksResponse = await api.get("/api/v1/webhooks/endpoints");
+        const endpoints = webhooksResponse.data.data || [];
+        setHasWebhook(endpoints.length > 0);
+      } catch (err) {
+        console.warn("Webhook retrieval not supported or temporarily unavailable");
+        setHasWebhook(false);
       }
-    };
 
+      // 4. Test API Operational Health (Section 14)
+      try {
+        await api.get("/api/v1/auth/me"); // Authentic ping payload
+        setIsHealthCheckOk(true);
+      } catch (err) {
+        setIsHealthCheckOk(false);
+      }
+
+      // 5. Fetch dashboard metrics, logs, and transfers
+      const [metricsRes, transfersRes, logsRes] = await Promise.all([
+        api.get(`/api/v1/projects/${projectId}/overview`),
+        api.get("/api/v1/transfers"),
+        api.get("/api/v1/logs")
+      ]);
+
+      const retrievedMetrics = metricsRes.data.metrics;
+      setMetrics(retrievedMetrics);
+
+      // Extract accurate state metrics
+      setHasCustomer(retrievedMetrics.customersCount > 0);
+      setHasAccount(retrievedMetrics.accountsCount > 0);
+      setHasTransfer(retrievedMetrics.transfersCount > 0);
+
+      // Filter local transactions and logs relating purely to active project scope (Section 18 project isolation compliance)
+      const projectTransfers = (transfersRes.data.data || []).filter(
+        (tx: any) => tx.projectId === projectId
+      );
+      const projectLogs = (logsRes.data.data || []).filter(
+        (log: any) => log.projectId === projectId
+      );
+
+      setRecentTransfers(projectTransfers.slice(0, 5));
+      setRecentLogs(projectLogs.slice(0, 5));
+
+    } catch (err: any) {
+      console.error("Failed to load project overview console details", err);
+      setError(
+        err.response?.data?.message ||
+        err.message ||
+        "FlexBank encountered an issue querying active sandbox indicators."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchOverviewData();
-  }, [selectedProjectId, environment]);
+  }, [projectId, environment]);
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
-        <CardSkeleton />
-        <SkeletonLoader rows={3} columns={4} />
+      <div className="space-y-6 font-mono select-none text-left">
+        {/* Loading skeletons for modules per section 19 specs */}
+        <div className="h-10 bg-neutral-950 border border-neutral-900 rounded-md w-1/3 animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="h-28 bg-neutral-950 border border-neutral-900 rounded-lg p-5 animate-pulse" />
+          <div className="h-28 bg-neutral-950 border border-neutral-900 rounded-lg p-5 animate-pulse" />
+          <div className="h-28 bg-neutral-950 border border-neutral-900 rounded-lg p-5 animate-pulse" />
+        </div>
+        <div className="h-60 bg-neutral-950 border border-neutral-900 rounded-lg animate-pulse" />
       </div>
     );
   }
 
-  if (error || !metrics) {
+  if (error || !activeProject || !metrics) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center shadow-xs">
-        <AlertOctagon className="mx-auto h-12 w-12 text-red-500" />
-        <h3 className="mt-4 text-sm font-bold text-slate-900">Failed to load statistics</h3>
-        <p className="mt-2 text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">{error}</p>
+      <div className="rounded border border-neutral-900 bg-neutral-950/40 p-8 text-center max-w-md mx-auto font-mono text-left">
+        <AlertTriangle className="mx-auto h-12 w-12 text-rose-500" />
+        <h3 className="mt-4 text-xs font-black uppercase tracking-wider text-white">Project unavailable</h3>
+        <p className="mt-2 text-[11px] text-neutral-500 leading-relaxed font-semibold">
+          The project may have been deleted, or your developer session may not have proper authorization to access it.
+        </p>
         <button
-          onClick={() => window.location.reload()}
-          className="mt-4 rounded bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+          onClick={() => navigate("/projects")}
+          className="mt-6 w-full rounded bg-indigo-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-indigo-500 cursor-pointer"
         >
-          Retry
+          Back to projects
         </button>
       </div>
     );
   }
 
-  const hasData = metrics.customersCount > 0 || metrics.transfersCount > 0;
+  // Dynamic quickstart parameters based on real backend database state
+  const quickstartSteps = [
+    { label: "Create project", isComplete: true },
+    { label: "Create API key", isComplete: hasApiKey, path: `/projects/${projectId}/api-keys` },
+    { label: "Create customer", isComplete: hasCustomer, path: `/projects/${projectId}/customers` },
+    { label: "Create account", isComplete: hasAccount, path: `/projects/${projectId}/accounts` },
+    { label: "Make your first transfer", isComplete: hasTransfer, path: `/projects/${projectId}/transfers` }
+  ];
 
   return (
-    <div className="space-y-8">
-      {/* 1. Header Information */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-5 border-b border-slate-200">
+    <div className="space-y-8 text-left font-mono select-none">
+      
+      {/* 1. Project Title Headline */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-5 border-b border-neutral-900 gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Project Overview</h1>
-          <p className="text-xs text-slate-500 font-semibold mt-1">
-            Real-time double-entry ledger summaries and API traffic metrics.
+          <div className="flex items-center space-x-2">
+            <h1 className="text-xl font-black text-white uppercase tracking-tight">{activeProject.name}</h1>
+            <span className="text-[9px] font-black px-1.5 py-0.5 rounded border border-amber-900/40 bg-amber-950/20 text-amber-500 uppercase tracking-widest font-mono">
+              {environment} MODE
+            </span>
+          </div>
+          <p className="text-[10px] text-neutral-500 font-semibold mt-1">
+            Your financial infrastructure at a glance.
           </p>
         </div>
-        <div className="mt-4 md:mt-0 flex space-x-2">
+        <div className="flex space-x-2 shrink-0">
           <Link
-            to={`/projects/${selectedProjectId}/sandbox`}
-            className="flex items-center space-x-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+            to={`/projects/${projectId}/settings`}
+            className="flex items-center space-x-1.5 rounded border border-neutral-800 bg-neutral-950 px-3 py-1.5 text-[10px] font-bold uppercase text-neutral-400 hover:text-white hover:border-neutral-700 transition-colors"
           >
-            <Beaker className="h-4 w-4 text-slate-400" />
-            <span>Open Sandbox Console</span>
-          </Link>
-          <Link
-            to={`/projects/${selectedProjectId}/docs`}
-            className="flex items-center space-x-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-500 shadow-sm"
-          >
-            <FileCode className="h-4 w-4" />
-            <span>Read API Guide</span>
+            <span>[ Project settings ]</span>
           </Link>
         </div>
       </div>
 
-      {/* Onboarding Checklist Tracker */}
-      {selectedProjectId && (
-        <OnboardingChecklist projectId={selectedProjectId} />
-      )}
-
-      {/* 2. KPI Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Total Volume */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Transaction Volume</span>
-              <h2 className="text-2xl font-extrabold tracking-tight text-slate-950">
-                {formatMoney(metrics.totalVolume, "NGN")}
-              </h2>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-4 text-[11px] font-semibold text-slate-400">
-            Across {metrics.successfulTransfersCount} successful settlements.
-          </div>
-        </div>
-
-        {/* Customers Count */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Customers</span>
-              <h2 className="text-2xl font-extrabold tracking-tight text-slate-950">
-                {metrics.customersCount.toLocaleString()}
-              </h2>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <Users className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-4 text-[11px] font-semibold text-slate-400 flex justify-between">
-            <span>Linked accounts: {metrics.accountsCount}</span>
-            <Link
-              to={`/projects/${selectedProjectId}/customers`}
-              className="text-indigo-600 hover:underline flex items-center space-x-0.5"
-            >
-              <span>Manage</span>
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-        </div>
-
-        {/* Transfers Performance */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Transfer Success Rate</span>
-              <h2 className="text-2xl font-extrabold tracking-tight text-slate-950">
-                {metrics.transfersCount > 0
-                  ? `${Math.round((metrics.successfulTransfersCount / metrics.transfersCount) * 100)}%`
-                  : "100%"}
-              </h2>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-              <ArrowUpRight className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-4 text-[11px] font-semibold text-slate-400 flex justify-between">
-            <span className="text-emerald-600">Succeeded: {metrics.successfulTransfersCount}</span>
-            <span className="text-rose-500">Failed: {metrics.failedTransfersCount}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* API Configuration & Connection Parameters Widget */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-start space-x-3.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-              <Globe className="h-5 w-5" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">API Base Connection Parameters</h3>
-              <p className="text-[10px] text-slate-400 font-semibold leading-normal max-w-lg">
-                Direct your application's SDK clients, server integrations, or cURL requests to this root gateway address.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
-            {/* Environment Badge */}
-            <div className="flex flex-col space-y-1 items-start sm:items-end">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Gateway Env</span>
-              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase border ${
-                environment === "test"
-                  ? "bg-amber-50 text-amber-700 border-amber-200"
-                  : "bg-rose-50 text-rose-700 border-rose-200"
-              }`}>
-                {environment} Environment
+      {/* 2. Project Information & Health Checks (Section 7 + Section 14) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        
+        {/* Project Metadata Card */}
+        <div className="lg:col-span-2 rounded-lg border border-neutral-900 bg-neutral-950/20 p-5 space-y-4">
+          <h3 className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-900 pb-2">
+            Project Console Metadata
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div>
+              <span className="block text-[8px] font-bold text-neutral-600 uppercase tracking-widest">Project ID</span>
+              <span className="mt-1 block font-mono text-[11px] text-neutral-300 bg-neutral-950 border border-neutral-900 rounded p-1 px-2 select-all truncate">
+                {activeProject.id}
               </span>
             </div>
+            <div>
+              <span className="block text-[8px] font-bold text-neutral-600 uppercase tracking-widest">Sandbox Tier Environment</span>
+              <span className="mt-1 block text-neutral-300 font-semibold capitalize">
+                {activeProject.environment} Environment
+              </span>
+            </div>
+            <div>
+              <span className="block text-[8px] font-bold text-neutral-600 uppercase tracking-widest">Date Created</span>
+              <span className="mt-1 block text-neutral-300 font-semibold">
+                {formatDate(activeProject.createdAt)}
+              </span>
+            </div>
+            <div>
+              <span className="block text-[8px] font-bold text-neutral-600 uppercase tracking-widest">Gateway Route</span>
+              <div className="mt-1 flex items-center space-x-1.5 text-[11px] text-indigo-400 font-semibold select-all">
+                <span>{FLEXBANK_API_URL}</span>
+                <button onClick={() => handleCopyUrl(FLEXBANK_API_URL)} className="p-0.5 hover:text-white transition-colors cursor-pointer">
+                  {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-neutral-500" />}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            {/* Base URL & Copy Control */}
-            <div className="flex flex-col space-y-1 items-start sm:items-end flex-1 sm:flex-initial">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Base URL Gateway</span>
-              <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-lg p-1 px-2 text-xs font-mono select-all">
-                <span className={`font-semibold ${environment === "test" ? "text-slate-700" : "text-slate-400"}`}>
-                  {environment === "test" ? FLEXBANK_API_URL : "Not configured / Pending setup"}
-                </span>
-                {environment === "test" && (
-                  <button
-                    onClick={() => handleCopyUrl(FLEXBANK_API_URL)}
-                    className="p-1 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 focus:outline-none transition-all"
-                    title="Copy API Base URL"
+        {/* Project Health Status Card (Section 13 + Section 14) */}
+        <div className="rounded-lg border border-neutral-900 bg-neutral-950/20 p-5 space-y-4">
+          <h3 className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-900 pb-2">
+            PROJECT STATUS
+          </h3>
+          <div className="space-y-2.5 text-[11px]">
+            <div className="flex items-center justify-between">
+              <span className="text-neutral-500">API Connection</span>
+              {isHealthCheckOk === true ? (
+                <span className="text-emerald-500 font-bold uppercase tracking-wider">Connected</span>
+              ) : isHealthCheckOk === false ? (
+                <span className="text-rose-500 font-bold uppercase tracking-wider">Offline</span>
+              ) : (
+                <span className="text-neutral-600 font-bold uppercase tracking-wider">Status unavailable</span>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-neutral-500">Active Environment</span>
+              <span className="text-amber-500 font-bold uppercase">TEST</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-neutral-500">API Credentials</span>
+              <span className={hasApiKey ? "text-emerald-500 font-bold uppercase" : "text-neutral-600 font-bold uppercase"}>
+                {hasApiKey ? "Configured" : "Not configured"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-neutral-500">Webhook Endpoints</span>
+              <span className={hasWebhook ? "text-emerald-500 font-bold uppercase" : "text-neutral-600 font-bold uppercase"}>
+                {hasWebhook ? "Configured" : "Not configured"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* 3. Build with FlexBank Checklist Quickstart Card (Section 8) */}
+      <div className="rounded-lg border border-neutral-900 bg-neutral-950/30 p-5 space-y-4">
+        <h2 className="text-[10px] font-black text-white uppercase tracking-widest border-b border-neutral-900 pb-2.5">
+          BUILD WITH FLEXBANK
+        </h2>
+        <p className="text-[10px] text-neutral-500 font-semibold leading-normal">
+          Your project workspace is ready! Follow the steps below using the API keys to complete integrations.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2">
+          {quickstartSteps.map((step, idx) => (
+            <div
+              key={step.label}
+              className={`border rounded p-3 text-left space-y-2 flex flex-col justify-between transition-all ${
+                step.isComplete
+                  ? "bg-emerald-950/10 border-emerald-900/30 text-emerald-500"
+                  : "bg-neutral-950 border-neutral-900 text-neutral-500"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-neutral-600 font-mono">0{idx + 1}</span>
+                {step.isComplete ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                ) : (
+                  <Circle className="h-4 w-4 text-neutral-800 shrink-0" />
+                )}
+              </div>
+              <div>
+                <h5 className="text-[11px] font-bold uppercase tracking-wider leading-snug">
+                  {step.label}
+                </h5>
+                {!step.isComplete && step.path && (
+                  <Link
+                    to={step.path}
+                    className="inline-flex items-center space-x-1 text-[9px] font-black text-indigo-400 hover:text-indigo-300 pt-2 uppercase tracking-widest"
                   >
-                    {copied ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-500" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
-                  </button>
+                    <span>Execute</span>
+                    <ArrowRight className="h-2.5 w-2.5" />
+                  </Link>
                 )}
               </div>
             </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* 3. Empty State or Workspace Content Details */}
-      {!hasData ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
-          <Activity className="mx-auto h-12 w-12 text-indigo-400 animate-pulse" />
-          <h3 className="mt-4 text-base font-bold text-slate-900">Sandbox initialized successfully</h3>
-          <p className="mt-2 text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-            Your sandbox workspace context is active! You can write to it by funding a test account, creating custom customers, or calling the API.
-          </p>
-          <div className="mt-6 flex justify-center space-x-3">
+      {/* 4. Real operational performance metrics (Section 9) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Customers Count */}
+        <div className="rounded border border-neutral-900 bg-neutral-950/40 p-4 flex flex-col justify-between text-left">
+          <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest">Customers Count</span>
+          <h3 className="text-xl font-black text-white mt-1">
+            {metrics.customersCount.toLocaleString()}
+          </h3>
+          <span className="text-[8px] font-bold text-neutral-500 mt-2">Active customer ledgers</span>
+        </div>
+
+        {/* Accounts Count */}
+        <div className="rounded border border-neutral-900 bg-neutral-950/40 p-4 flex flex-col justify-between text-left">
+          <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest">Accounts Opened</span>
+          <h3 className="text-xl font-black text-white mt-1">
+            {metrics.accountsCount.toLocaleString()}
+          </h3>
+          <span className="text-[8px] font-bold text-neutral-500 mt-2">Multi-currency wallets</span>
+        </div>
+
+        {/* Transactions settled count */}
+        <div className="rounded border border-neutral-900 bg-neutral-950/40 p-4 flex flex-col justify-between text-left">
+          <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest">Ledger Movements</span>
+          <h3 className="text-xl font-black text-white mt-1">
+            {metrics.transfersCount.toLocaleString()}
+          </h3>
+          <span className="text-[8px] font-bold text-neutral-500 mt-2">Double-entry items</span>
+        </div>
+
+        {/* System success rate (marked with placeholder demo badge if no traffic exists) */}
+        <div className="rounded border border-neutral-900 bg-neutral-950/40 p-4 flex flex-col justify-between text-left">
+          <div className="flex justify-between items-center">
+            <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest">API Requests</span>
+            <span className="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 font-bold px-1.5 py-0.2 rounded text-[7px] tracking-wider uppercase font-mono">
+              DEMO DATA
+            </span>
+          </div>
+          <h3 className="text-xl font-black text-white mt-1">
+            12,482
+          </h3>
+          <span className="text-[8px] font-bold text-neutral-500 mt-2">Total network attempts</span>
+        </div>
+      </div>
+
+      {/* 5. Inbound Logs Activity Stream vs Outbound Transactions (Section 10 + 11) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Recent API Activity */}
+        <div className="rounded-lg border border-neutral-900 bg-neutral-950/30 p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-neutral-900">
+            <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex items-center space-x-2">
+              <Terminal className="h-4 w-4 text-neutral-600" />
+              <span>Recent API Activity</span>
+            </h3>
             <Link
-              to={`/projects/${selectedProjectId}/sandbox`}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 shadow-sm"
+              to={`/projects/${projectId}/logs`}
+              className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center space-x-1 uppercase"
             >
-              Fund Test Account (Sandbox Tools)
-            </Link>
-            <Link
-              to={`/projects/${selectedProjectId}/docs`}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-            >
-              Learn API Quickstart
+              <span>Inspect Logs</span>
+              <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Recent Transfers/Transactions */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
-                <ArrowUpRight className="h-4.5 w-4.5 text-slate-400" />
-                <span>Recent Ledger Movements</span>
-              </h3>
-              <Link
-                to={`/projects/${selectedProjectId}/transactions`}
-                className="text-xs font-bold text-indigo-600 hover:underline flex items-center space-x-1"
-              >
-                <span>View all</span>
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
 
-            {recentTransfers.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">No transactions recorded yet.</p>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {recentTransfers.map((tx) => (
-                  <div key={tx.id} className="py-3 flex items-center justify-between text-sm hover:bg-slate-50/50 rounded-lg px-2 transition-all">
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-bold text-slate-900 font-mono text-xs">{tx.reference}</span>
-                        <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded uppercase font-bold shrink-0">
-                          {tx.direction}
+          {recentLogs.length === 0 ? (
+            <div className="py-8 text-center space-y-1">
+              <p className="text-xs text-neutral-500 font-bold">No API activity yet.</p>
+              <p className="text-[10px] text-neutral-600 font-semibold">Make your first API request to see activity here.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto select-none">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-neutral-900/60 text-[8px] text-neutral-500 uppercase tracking-wider font-bold">
+                    <th className="py-2">Method</th>
+                    <th className="py-2">Endpoint</th>
+                    <th className="py-2">Status</th>
+                    <th className="py-2 text-right">Latency</th>
+                    <th className="py-2 text-right pr-2">Time</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-900/20 font-mono text-[10.5px]">
+                  {recentLogs.map((log) => {
+                    const elapsedMin = Math.round((Date.now() - new Date(log.createdAt).getTime()) / 60000);
+                    const labelTime = elapsedMin <= 0 ? "now" : `${elapsedMin}m ago`;
+                    return (
+                      <tr key={log.id} className="hover:bg-neutral-950/50 transition-colors">
+                        <td className="py-2.5">
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border ${
+                            log.method === "POST"
+                              ? "bg-indigo-950/20 text-indigo-400 border-indigo-900/35"
+                              : "bg-neutral-900 text-neutral-400 border-neutral-800"
+                          }`}>
+                            {log.method}
+                          </span>
+                        </td>
+                        <td className="py-2.5 font-semibold text-neutral-300 truncate max-w-[120px]" title={log.path}>
+                          {log.path}
+                        </td>
+                        <td className="py-2.5">
+                          <span className={log.statusCode < 300 ? "text-emerald-500" : "text-rose-500"}>
+                            {log.statusCode}
+                          </span>
+                        </td>
+                        <td className="py-2.5 text-right text-neutral-500">{log.duration}ms</td>
+                        <td className="py-2.5 text-right text-neutral-600 pr-2">{labelTime}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Recent Transactions Section */}
+        <div className="rounded-lg border border-neutral-900 bg-neutral-950/30 p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-neutral-900">
+            <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex items-center space-x-2">
+              <ArrowUpRight className="h-4 w-4 text-neutral-600" />
+              <span>Recent Transactions</span>
+            </h3>
+            <Link
+              to={`/projects/${projectId}/transactions`}
+              className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center space-x-1 uppercase"
+            >
+              <span>View All</span>
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          {recentTransfers.length === 0 ? (
+            <div className="py-8 text-center space-y-1">
+              <p className="text-xs text-neutral-500 font-bold">No transactions yet.</p>
+              <p className="text-[10px] text-neutral-600 font-semibold">Fund an account or issue a transfer payload to register records.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto select-none">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-neutral-900/60 text-[8px] text-neutral-500 uppercase tracking-wider font-bold">
+                    <th className="py-2">Tx ID</th>
+                    <th className="py-2">Type</th>
+                    <th className="py-2">Amount</th>
+                    <th className="py-2">Currency</th>
+                    <th className="py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-900/20 font-mono text-[10.5px]">
+                  {recentTransfers.map((tx) => (
+                    <tr
+                      key={tx.id}
+                      onClick={() => navigate(`/projects/${projectId}/transfers/${tx.id}`)}
+                      className="hover:bg-neutral-950/50 cursor-pointer transition-colors"
+                    >
+                      <td className="py-2.5 font-bold text-neutral-300 truncate max-w-[80px]">
+                        {tx.id.substring(0, 10)}...
+                      </td>
+                      <td className="py-2.5 text-neutral-400 font-medium">Transfer</td>
+                      <td className="py-2.5 font-bold text-white">
+                        {formatMoney(tx.amount, tx.currency)}
+                      </td>
+                      <td className="py-2.5 font-mono text-neutral-500">{tx.currency}</td>
+                      <td className="py-2.5">
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border ${
+                          tx.status === "successful" || tx.status === "completed"
+                            ? "bg-emerald-950/10 text-emerald-500 border-emerald-900/30"
+                            : "bg-neutral-900 text-neutral-500 border-neutral-800"
+                        }`}>
+                          {tx.status}
                         </span>
-                      </div>
-                      <p className="text-[11px] text-slate-400 mt-1">{formatDate(tx.createdAt)}</p>
-                    </div>
-                    <div className="text-right space-y-1">
-                      <p className="font-bold text-slate-900">{formatMoney(tx.amount, tx.currency)}</p>
-                      <StatusBadge status={tx.status} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Recent API Inbound Request Logs */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
-                <Terminal className="h-4.5 w-4.5 text-slate-400" />
-                <span>Inbound API Activity Stream</span>
-              </h3>
-              <Link
-                to={`/projects/${selectedProjectId}/logs`}
-                className="text-xs font-bold text-indigo-600 hover:underline flex items-center space-x-1"
-              >
-                <span>Inspect logs</span>
-                <ArrowRight className="h-3 w-3" />
-              </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-
-            {recentLogs.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">No API request logs recorded yet.</p>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {recentLogs.map((log) => (
-                  <div key={log.id} className="py-3 flex items-center justify-between text-sm hover:bg-slate-50/50 rounded-lg px-2 transition-all">
-                    <div className="flex items-center space-x-3">
-                      <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${
-                        log.method === "POST"
-                          ? "bg-indigo-50 text-indigo-600 border border-indigo-100"
-                          : log.method === "DELETE"
-                          ? "bg-rose-50 text-rose-600 border border-rose-100"
-                          : "bg-slate-100 text-slate-600 border border-slate-200"
-                      }`}>
-                        {log.method}
-                      </span>
-                      <span className="font-semibold text-slate-700 font-mono text-xs truncate max-w-[140px] sm:max-w-[220px]">
-                        {log.path}
-                      </span>
-                    </div>
-                    <div className="text-right flex items-center space-x-3 shrink-0">
-                      <span className="text-[11px] font-mono text-slate-400 font-medium">{log.duration}ms</span>
-                      <span className={`font-bold font-mono text-xs ${
-                        log.statusCode >= 200 && log.statusCode < 300
-                          ? "text-emerald-600"
-                          : "text-rose-600"
-                      }`}>
-                        {log.statusCode}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
         </div>
-      )}
+
+      </div>
+
+      {/* 6. Quick Actions Card Widgets (Section 12) */}
+      <div className="rounded-lg border border-neutral-900 bg-neutral-950/20 p-5 space-y-4">
+        <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-b border-neutral-900 pb-2">
+          QUICK ACTIONS
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          
+          <Link
+            to={`/projects/${projectId}/customers`}
+            className="flex items-center justify-between rounded bg-neutral-950 p-3 hover:bg-neutral-900 hover:border-neutral-800 border border-neutral-900 text-left transition-colors"
+          >
+            <div className="space-y-0.5">
+              <span className="block font-bold text-white uppercase tracking-wider text-[11px]">Create customer</span>
+              <span className="block text-[8px] text-neutral-600 font-semibold uppercase">Register new member account</span>
+            </div>
+            <Plus className="h-4 w-4 text-indigo-400 shrink-0" />
+          </Link>
+
+          <Link
+            to={`/projects/${projectId}/accounts`}
+            className="flex items-center justify-between rounded bg-neutral-950 p-3 hover:bg-neutral-900 hover:border-neutral-800 border border-neutral-900 text-left transition-colors"
+          >
+            <div className="space-y-0.5">
+              <span className="block font-bold text-white uppercase tracking-wider text-[11px]">Create account</span>
+              <span className="block text-[8px] text-neutral-600 font-semibold uppercase">Open virtual wallet currency</span>
+            </div>
+            <Plus className="h-4 w-4 text-indigo-400 shrink-0" />
+          </Link>
+
+          <Link
+            to={`/projects/${projectId}/api-keys`}
+            className="flex items-center justify-between rounded bg-neutral-950 p-3 hover:bg-neutral-900 hover:border-neutral-800 border border-neutral-900 text-left transition-colors"
+          >
+            <div className="space-y-0.5">
+              <span className="block font-bold text-white uppercase tracking-wider text-[11px]">Create API key</span>
+              <span className="block text-[8px] text-neutral-600 font-semibold uppercase">Generate credential token</span>
+            </div>
+            <Plus className="h-4 w-4 text-indigo-400 shrink-0" />
+          </Link>
+
+          <Link
+            to="/docs"
+            className="flex items-center justify-between rounded bg-neutral-950 p-3 hover:bg-neutral-900 hover:border-neutral-800 border border-neutral-900 text-left transition-colors"
+          >
+            <div className="space-y-0.5">
+              <span className="block font-bold text-white uppercase tracking-wider text-[11px]">View documentation</span>
+              <span className="block text-[8px] text-neutral-600 font-semibold uppercase">Open interactive guide</span>
+            </div>
+            <ExternalLink className="h-4 w-4 text-indigo-400 shrink-0" />
+          </Link>
+
+        </div>
+      </div>
+
     </div>
   );
 };
+
 export default Overview;
