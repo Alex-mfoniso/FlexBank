@@ -285,7 +285,49 @@ export const Overview: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
 
+      {/* GET STARTED Onboarding (Section 22) */}
+      <div className="rounded-lg border border-indigo-950/30 bg-indigo-950/5 p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-indigo-950/20 pb-3">
+          <div className="space-y-1">
+            <h2 className="text-[11px] font-black text-indigo-400 uppercase tracking-widest block leading-none">
+              🚀 GET STARTED WITH FLEXBANK
+            </h2>
+            <p className="text-[10px] text-neutral-500 font-semibold uppercase leading-normal">
+              New to FlexBank? Follow our quick onboarding steps to execute your first sandbox call.
+            </p>
+          </div>
+          <Link
+            to={projectId ? `/projects/${projectId}/docs/quickstart` : "/docs/quickstart"}
+            className="rounded bg-indigo-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-indigo-500 transition-colors cursor-pointer shrink-0"
+          >
+            Open Quickstart
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-neutral-950/40 p-3 rounded border border-neutral-900 text-left">
+            <span className="text-[9px] font-bold text-neutral-600 block">STEP 1</span>
+            <span className="text-white font-bold text-xs uppercase tracking-wide block mt-1.5">1. Create API Key</span>
+            <span className="text-[8.5px] text-neutral-500 font-medium block mt-1 leading-normal uppercase">Generate a secure test credential token.</span>
+          </div>
+          <div className="bg-neutral-950/40 p-3 rounded border border-neutral-900 text-left">
+            <span className="text-[9px] font-bold text-neutral-600 block">STEP 2</span>
+            <span className="text-white font-bold text-xs uppercase tracking-wide block mt-1.5">2. Read Quickstart</span>
+            <span className="text-[8.5px] text-neutral-500 font-medium block mt-1 leading-normal uppercase">Inspect REST payload requirements & cURL examples.</span>
+          </div>
+          <div className="bg-neutral-950/40 p-3 rounded border border-neutral-900 text-left">
+            <span className="text-[9px] font-bold text-neutral-600 block">STEP 3</span>
+            <span className="text-white font-bold text-xs uppercase tracking-wide block mt-1.5">3. Make First Request</span>
+            <span className="text-[8.5px] text-neutral-500 font-medium block mt-1 leading-normal uppercase">Dispatch an authenticated API call in seconds.</span>
+          </div>
+          <div className="bg-neutral-950/40 p-3 rounded border border-neutral-900 text-left">
+            <span className="text-[9px] font-bold text-neutral-600 block">STEP 4</span>
+            <span className="text-white font-bold text-xs uppercase tracking-wide block mt-1.5">4. View API Logs</span>
+            <span className="text-[8.5px] text-neutral-500 font-medium block mt-1 leading-normal uppercase">Trace sandbox headers and payloads in real-time.</span>
+          </div>
+        </div>
       </div>
 
       {/* 3. Build with FlexBank Checklist Quickstart Card (Section 8) */}

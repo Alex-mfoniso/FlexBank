@@ -44,6 +44,7 @@ export const App: React.FC = () => {
           {/* Public Home Landing page */}
           <Route path="/" element={<Landing />} />
           <Route path="/docs" element={<Docs />} />
+          <Route path="/docs/:docId" element={<Docs />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Public Auth routes */}
@@ -79,6 +80,7 @@ export const App: React.FC = () => {
                 <Route path="api-keys" element={<ApiKeys />} />
                 <Route path="sandbox" element={<Sandbox />} />
                 <Route path="docs" element={<Docs />} />
+                <Route path="docs/:docId" element={<Docs />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
             </Route>
