@@ -82,6 +82,13 @@ export const Logs: React.FC = () => {
     fetchLogs();
   }, [projectId, methodFilter]);
 
+  // Track logs viewing for the interactive onboarding checklist
+  useEffect(() => {
+    if (projectId) {
+      localStorage.setItem(`flexbank_onboarding_${projectId}_viewed_logs`, "true");
+    }
+  }, [projectId]);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchLogs();

@@ -35,6 +35,7 @@ import { ApiKeys } from "./pages/ApiKeys";
 import { Sandbox } from "./pages/Sandbox";
 import { Docs } from "./pages/Docs";
 import { Settings } from "./pages/Settings";
+import { Quickstart } from "./pages/Quickstart";
 
 export const App: React.FC = () => {
   return (
@@ -78,6 +79,7 @@ export const App: React.FC = () => {
                 <Route path="logs" element={<Logs />} />
                 <Route path="logs/:requestId" element={<LogDetails />} />
                 <Route path="api-keys" element={<ApiKeys />} />
+                <Route path="quickstart" element={<Quickstart />} />
                 <Route path="sandbox" element={<Sandbox />} />
                 <Route path="docs" element={<Docs />} />
                 <Route path="docs/:docId" element={<Docs />} />

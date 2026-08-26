@@ -185,6 +185,23 @@ export const Layout: React.FC = () => {
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         />
 
+        {/* Global Sandbox Test Mode Banner (Section 2 Compliance) */}
+        {environment === "test" && projectId && (
+          <div className="flex items-center justify-between bg-indigo-950/20 border-b border-indigo-950/40 px-5 py-2.5 text-[9px] font-bold text-indigo-400 font-mono">
+            <div className="flex items-center space-x-2">
+              <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-indigo-600 text-white uppercase tracking-widest animate-pulse">
+                TEST MODE
+              </span>
+              <span className="text-neutral-400 font-semibold uppercase">
+                This project uses the FlexBank sandbox. No real money is involved.
+              </span>
+            </div>
+            <div className="hidden sm:block text-neutral-600 text-[8px] uppercase tracking-wider">
+              SANDBOX SIMULATOR ACTIVE
+            </div>
+          </div>
+        )}
+
         {/* Global Live State Alert Banner */}
         {environment === "live" && projectId && (
           <div className="flex items-center justify-between bg-rose-950/60 border-y border-rose-900 px-4 py-2.5 text-[10px] font-bold text-rose-300 font-mono">

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { api, FLEXBANK_API_URL } from "../lib/api";
+import { OnboardingChecklist } from "../components/OnboardingChecklist";
 import { formatMoney, formatDate } from "../utils/format";
 import {
   Users,
@@ -331,50 +332,7 @@ export const Overview: React.FC = () => {
       </div>
 
       {/* 3. Build with FlexBank Checklist Quickstart Card (Section 8) */}
-      <div className="rounded-lg border border-neutral-900 bg-neutral-950/30 p-5 space-y-4">
-        <h2 className="text-[10px] font-black text-white uppercase tracking-widest border-b border-neutral-900 pb-2.5">
-          BUILD WITH FLEXBANK
-        </h2>
-        <p className="text-[10px] text-neutral-500 font-semibold leading-normal">
-          Your project workspace is ready! Follow the steps below using the API keys to complete integrations.
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2">
-          {quickstartSteps.map((step, idx) => (
-            <div
-              key={step.label}
-              className={`border rounded p-3 text-left space-y-2 flex flex-col justify-between transition-all ${
-                step.isComplete
-                  ? "bg-emerald-950/10 border-emerald-900/30 text-emerald-500"
-                  : "bg-neutral-950 border-neutral-900 text-neutral-500"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-neutral-600 font-mono">0{idx + 1}</span>
-                {step.isComplete ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                ) : (
-                  <Circle className="h-4 w-4 text-neutral-800 shrink-0" />
-                )}
-              </div>
-              <div>
-                <h5 className="text-[11px] font-bold uppercase tracking-wider leading-snug">
-                  {step.label}
-                </h5>
-                {!step.isComplete && step.path && (
-                  <Link
-                    to={step.path}
-                    className="inline-flex items-center space-x-1 text-[9px] font-black text-indigo-400 hover:text-indigo-300 pt-2 uppercase tracking-widest"
-                  >
-                    <span>Execute</span>
-                    <ArrowRight className="h-2.5 w-2.5" />
-                  </Link>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <OnboardingChecklist projectId={projectId || ""} />
 
       {/* 4. Real operational performance metrics (Section 9) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

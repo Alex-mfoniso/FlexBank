@@ -1,6 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Circle, ArrowRight, ChevronDown, ChevronUp, EyeOff, RefreshCw, Key, Copy, Check, Sparkles, AlertCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Circle,
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  EyeOff,
+  RefreshCw,
+  Key,
+  Copy,
+  Check,
+  Sparkles,
+  AlertCircle,
+  BookOpen,
+  Folder,
+  Terminal,
+  Clock
+} from "lucide-react";
 import { api } from "../lib/api";
 
 interface OnboardingChecklistProps {
@@ -12,14 +29,15 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSkipped, setIsSkipped] = useState(false);
 
-  // Checked state metrics
+  // Dynamic database states
   const [hasApiKey, setHasApiKey] = useState(false);
   const [hasApiLog, setHasApiLog] = useState(false);
   const [hasCustomer, setHasCustomer] = useState(false);
   const [hasAccount, setHasAccount] = useState(false);
   const [hasTransfer, setHasTransfer] = useState(false);
+  const [hasViewedLogs, setHasViewedLogs] = useState(false);
 
-  // Inline Key Generator state
+  // Inline Key generator states
   const [isGeneratingKey, setIsGeneratingKey] = useState(false);
   const [generatedKeyPlaintext, setGeneratedKeyPlaintext] = useState<string | null>(null);
   const [copiedInlineKey, setCopiedInlineKey] = useState(false);
@@ -30,30 +48,28 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
       // 1. Fetch API Keys
       const keysResponse = await api.get(`/api/v1/projects/${projectId}/api-keys`);
       const activeKeys = keysResponse.data.apiKeys || [];
-      const hasKeys = activeKeys.some((k: any) => !k.revokedAt);
-      setHasApiKey(hasKeys);
+      setHasApiKey(activeKeys.some((k: any) => !k.revokedAt));
 
-      // 2. Fetch API Logs
+      // 2. Fetch Overview Metrics (Customers, Accounts, Transfers)
+      const metricsResponse = await api.get(`/api/v1/projects/${projectId}/overview`);
+      const m = metricsResponse.data.metrics;
+      setHasCustomer(m.customersCount > 0);
+      setHasAccount(m.accountsCount > 0);
+      setHasTransfer(m.transfersCount > 0);
+
+      // 3. Fetch API Logs
       const logsResponse = await api.get("/api/v1/logs");
-      const logs = logsResponse.data.data || [];
-      setHasApiLog(logs.length > 0);
+      const projectLogs = (logsResponse.data.data || []).filter(
+        (log: any) => log.projectId === projectId
+      );
+      setHasApiLog(projectLogs.length > 0);
 
-      // 3. Fetch Customers
-      const customersResponse = await api.get("/api/v1/customers");
-      const customers = customersResponse.data.customers || [];
-      setHasCustomer(customers.length > 0);
+      // 4. Retrieve logs view status from local storage
+      const logsViewed = localStorage.getItem(`flexbank_onboarding_${projectId}_viewed_logs`);
+      setHasViewedLogs(logsViewed === "true");
 
-      // 4. Fetch Accounts
-      const accountsResponse = await api.get("/api/v1/accounts");
-      const accounts = accountsResponse.data.accounts || [];
-      setHasAccount(accounts.length > 0);
-
-      // 5. Fetch Transfers
-      const transfersResponse = await api.get("/api/v1/transfers");
-      const transfers = transfersResponse.data.data || [];
-      setHasTransfer(transfers.length > 0);
     } catch (err) {
-      console.error("Failed to dynamically resolve onboarding progress checklist metrics", err);
+      console.error("Failed to dynamically resolve onboarding progress metrics", err);
     } finally {
       setLoading(false);
     }
@@ -75,7 +91,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
     setGeneratedKeyPlaintext(null);
     try {
       const response = await api.post(`/api/v1/projects/${projectId}/api-keys`, {
-        name: "Default Sandbox Key",
+        name: "Default Onboarding Key",
       });
       setGeneratedKeyPlaintext(response.data.key);
       setHasApiKey(true);
@@ -95,9 +111,70 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
     setTimeout(() => setCopiedInlineKey(false), 2000);
   };
 
+  const handleSkip = () => {
+    localStorage.setItem(`flexbank_skip_onboarding_${projectId}`, "true");
+    setIsSkipped(true);
+  };
+
+  const steps = [
+    {
+      id: "project",
+      label: "Create project",
+      desc: "Isolated ledger sandbox workspace established.",
+      isComplete: true,
+      link: null
+    },
+    {
+      id: "key",
+      label: "Create API key",
+      desc: "Generate developer API credentials for sandbox clients.",
+      isComplete: hasApiKey,
+      link: `/projects/${projectId}/api-keys`
+    },
+    {
+      id: "request",
+      label: "Make first API request",
+      desc: "Execute a test-key handshake handshake call.",
+      isComplete: hasApiLog,
+      link: `/projects/${projectId}/quickstart`
+    },
+    {
+      id: "customer",
+      label: "Create customer",
+      desc: "Register your first end-user customer ledger.",
+      isComplete: hasCustomer,
+      link: `/projects/${projectId}/customers`
+    },
+    {
+      id: "account",
+      label: "Create account",
+      desc: "Open balanced book-ledger accounts in USD, EUR, or NGN.",
+      isComplete: hasAccount,
+      link: `/projects/${projectId}/accounts`
+    },
+    {
+      id: "transfer",
+      label: "Make internal transfer",
+      desc: "Perform double-entry ledger balance transfers.",
+      isComplete: hasTransfer,
+      link: `/projects/${projectId}/transfers`
+    },
+    {
+      id: "logs",
+      label: "View API logs",
+      desc: "Inspect live REST execution trails and headers.",
+      isComplete: hasViewedLogs,
+      link: `/projects/${projectId}/logs`
+    }
+  ];
+
+  const completedCount = steps.filter((s) => s.isComplete).length;
+  const progressPercent = Math.round((completedCount / steps.length) * 100);
+  const allStepsCompleted = completedCount === steps.length;
+
   if (isSkipped) {
     return (
-      <div className="flex justify-end mb-6">
+      <div className="flex justify-end mb-6 font-mono text-[9px] uppercase">
         <button
           type="button"
           onClick={() => {
@@ -105,47 +182,29 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
             setIsSkipped(false);
             fetchOnboardingState();
           }}
-          className="text-[10px] font-bold text-indigo-600 hover:text-indigo-500 hover:underline flex items-center space-x-1"
+          className="text-neutral-500 hover:text-white transition-all flex items-center space-x-1"
         >
-          <SparklesIcon className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+          <Sparkles className="h-3 w-3 text-indigo-400" />
           <span>Restore Onboarding Checklist Progress</span>
         </button>
       </div>
     );
   }
 
-  const steps = [
-    { id: 1, label: "Register developer profile", desc: "Create your secure owner account credentials.", isComplete: true, link: null },
-    { id: 2, label: "Initialize platform workspace", desc: "Create an isolated ledger testing context.", isComplete: true, link: null },
-    { id: 3, label: "Generate secret API Keys", desc: "Obtain credentials to authenticate sandbox clients.", isComplete: hasApiKey, link: `/projects/${projectId}/api-keys` },
-    { id: 4, label: "Execute first API Request", desc: "Hit an endpoint (or execute via Try It playground).", isComplete: hasApiLog, link: `/projects/${projectId}/docs` },
-    { id: 5, label: "Register your first Customer", desc: "Create individual or corporate financial ledgers.", isComplete: hasCustomer, link: `/projects/${projectId}/customers` },
-    { id: 6, label: "Provision a multi-currency Account", desc: "Open book-ledger accounts in USD, NGN, or EUR.", isComplete: hasAccount, link: `/projects/${projectId}/accounts` },
-    { id: 7, label: "Dispatch double-entry Transfer", desc: "Process money settlements with instant balanced ledgers.", isComplete: hasTransfer, link: `/projects/${projectId}/transfers` },
-  ];
-
-  const completedCount = steps.filter((s) => s.isComplete).length;
-  const progressPercent = Math.round((completedCount / steps.length) * 100);
-
-  const handleSkip = () => {
-    localStorage.setItem(`flexbank_skip_onboarding_${projectId}`, "true");
-    setIsSkipped(true);
-  };
-
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden mb-6 text-left">
+    <div className="rounded-lg border border-neutral-900 bg-neutral-950/20 overflow-hidden mb-6 text-left text-neutral-300 font-mono select-none">
       
       {/* 1. Checklist Header */}
-      <div className="flex items-center justify-between px-5 py-4 bg-slate-50 border-b border-slate-200">
+      <div className="flex items-center justify-between px-5 py-4 bg-neutral-950/40 border-b border-neutral-900">
         <div className="space-y-1">
-          <div className="flex items-center space-x-2">
-            <span className="text-xs font-black text-slate-800 uppercase tracking-tight">Onboarding Integration Progress</span>
-            <span className="text-[10px] bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="text-[10px] font-black text-white uppercase tracking-wider">Onboarding Checklist</span>
+            <span className="text-[8px] border border-indigo-900/60 bg-indigo-950/30 text-indigo-400 font-black px-2 py-0.5 rounded-full uppercase tracking-widest shrink-0 w-fit">
               {progressPercent}% Complete ({completedCount}/{steps.length})
             </span>
           </div>
-          <p className="text-[10px] text-slate-500 font-semibold">
-            Complete the interactive checklist parameters to verify your application's connection lifecycle.
+          <p className="text-[9px] text-neutral-500 font-semibold leading-normal uppercase">
+            Complete sandbox integration parameters to finalize your developer workspace configurations.
           </p>
         </div>
 
@@ -153,42 +212,42 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
           <button
             type="button"
             onClick={fetchOnboardingState}
-            className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition-colors"
-            title="Refresh database metrics"
+            className="p-1.5 border border-neutral-900 bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-white rounded transition-colors"
+            title="Reload backend state"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-indigo-600" : ""}`} />
+            <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin text-indigo-400" : ""}`} />
           </button>
           <button
             type="button"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition-colors"
+            className="p-1.5 border border-neutral-900 bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-white rounded transition-colors"
           >
-            {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            {isCollapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
           </button>
         </div>
       </div>
 
-      {/* Progress Line Bar */}
-      <div className="w-full h-1 bg-slate-100">
+      {/* Progress line indicator */}
+      <div className="w-full h-[2px] bg-neutral-950">
         <div 
-          className="h-full bg-indigo-600 transition-all duration-500 ease-out" 
+          className="h-full bg-indigo-600 transition-all duration-500 ease-out shadow-[0_0_8px_rgba(79,70,229,0.4)]" 
           style={{ width: `${progressPercent}%` }}
         />
       </div>
 
-      {/* 2. Checklist Items Content */}
+      {/* 2. Interactive contents */}
       {!isCollapsed && (
-        <div className="p-5 space-y-5">
+        <div className="p-5 space-y-6">
           
-          {/* A. GUIDED INLINE KEY GENERATOR PROMPT BANNER */}
+          {/* A. SECURE INLINE KEY GENERATOR PROMPT BANNER */}
           {!hasApiKey && !generatedKeyPlaintext && (
-            <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="rounded border border-indigo-950 bg-indigo-950/10 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex items-start space-x-3 text-left">
-                <AlertCircle className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-indigo-400 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-slate-900">Secret credentials missing!</h4>
-                  <p className="text-[10px] text-slate-500 leading-normal font-semibold max-w-lg">
-                    You haven't generated any active API Keys yet! You need a secure secret key to make your first API request or test endpoints inside the playground guide.
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">Secret credentials missing!</h4>
+                  <p className="text-[10px] text-neutral-400 leading-normal font-semibold max-w-lg">
+                    You haven't generated any active API Keys yet. Open credentials or generate a test key to execute sandbox endpoints.
                   </p>
                 </div>
               </div>
@@ -197,34 +256,34 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
                 type="button"
                 onClick={handleGenerateInlineKey}
                 disabled={isGeneratingKey}
-                className="rounded-lg bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-600/10 transition-all disabled:opacity-50 shrink-0 flex items-center space-x-1.5 focus:outline-none"
+                className="rounded bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all disabled:opacity-50 shrink-0 flex items-center space-x-1.5 focus:outline-none cursor-pointer"
               >
-                <Key className="h-3.5 w-3.5" />
+                <Key className="h-3.5 w-3.5 shrink-0" />
                 <span>{isGeneratingKey ? "Generating..." : "Generate Test Key"}</span>
               </button>
             </div>
           )}
 
-          {/* B. SECURE KEY ONCE-ONLY VIEWER BANNER */}
+          {/* B. SECURE KEY ONCE-ONLY DISPLAY PANEL */}
           {generatedKeyPlaintext && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-4 space-y-3">
+            <div className="rounded border border-emerald-950/60 bg-emerald-950/5 p-4 space-y-3">
               <div className="flex items-start space-x-3 text-left">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-slate-900">API Key generated successfully!</h4>
-                  <p className="text-[10px] text-slate-500 leading-normal font-semibold">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">API Key generated successfully!</h4>
+                  <p className="text-[10px] text-neutral-400 leading-normal font-semibold">
                     Copy and save your secret API Key below. For safety compliance, this plaintext token will **not** be displayed again.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 bg-slate-900 text-slate-100 p-3 rounded-lg border border-slate-800 text-xs font-mono select-all">
-                <Key className="h-4 w-4 text-emerald-400 shrink-0" />
+              <div className="flex items-center space-x-2 bg-neutral-950 text-emerald-400 p-2.5 rounded border border-neutral-900 text-xs font-mono select-all">
+                <Key className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                 <span className="flex-1 truncate">{generatedKeyPlaintext}</span>
                 <button
                   type="button"
                   onClick={handleCopyInlineKey}
-                  className="p-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 transition-colors"
+                  className="p-1 border border-neutral-800 hover:border-neutral-700 bg-neutral-900 hover:bg-neutral-850 rounded text-neutral-300 transition-all cursor-pointer"
                   title="Copy secret token"
                 >
                   {copiedInlineKey ? (
@@ -237,45 +296,81 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
 
               <div className="flex justify-end pt-1">
                 <Link
-                  to={`/projects/${projectId}/docs`}
-                  className="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3.5 py-1.5 text-[10px] font-bold text-white shadow-sm transition-all flex items-center space-x-1"
+                  to={`/projects/${projectId}/quickstart`}
+                  className="rounded bg-emerald-600 hover:bg-emerald-500 px-3.5 py-1.5 text-[10px] font-bold text-white shadow-sm transition-all flex items-center space-x-1 uppercase"
                 >
-                  <span>Open Interactive Docs Playground</span>
+                  <span>Open Quickstart Playground</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
             </div>
           )}
 
-          {/* C. Primary checklist grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* C. YOU'RE READY - CONGRATULATORY FINAL PANEL */}
+          {allStepsCompleted && (
+            <div className="rounded border border-indigo-950 bg-gradient-to-r from-indigo-950/10 via-neutral-950/30 to-indigo-950/10 p-5 space-y-4 text-left relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-indigo-500/20" />
+              <div className="flex items-center space-x-2 text-indigo-400">
+                <Sparkles className="h-5 w-5 animate-pulse" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-white">YOU'RE READY</h4>
+              </div>
+              <p className="text-[10px] text-neutral-400 leading-relaxed font-semibold max-w-xl">
+                Your FlexBank sandbox is fully initialized and operational. Your API credentials, ledger accounts, and customer balances have successfully cleared the double-entry simulation framework. You're ready to integrate your production backend!
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-2 text-[10px] font-bold uppercase tracking-wider">
+                <Link
+                  to={`/projects/${projectId}/overview`}
+                  onClick={() => setIsCollapsed(true)}
+                  className="flex-1 rounded border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 hover:border-neutral-700 py-2.5 px-3 text-center text-neutral-300 hover:text-white transition-all"
+                >
+                  [ Open Project Console ]
+                </Link>
+                <Link
+                  to={`/projects/${projectId}/logs`}
+                  className="flex-1 rounded border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 hover:border-neutral-700 py-2.5 px-3 text-center text-neutral-300 hover:text-white transition-all"
+                >
+                  [ View API Logs ]
+                </Link>
+                <Link
+                  to="/docs"
+                  className="flex-1 rounded bg-indigo-600 hover:bg-indigo-500 py-2.5 px-3 text-center text-white transition-all"
+                >
+                  [ Read Documentation ]
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* D. Primary checklist grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {steps.map((step) => (
               <div 
                 key={step.id} 
-                className={`flex items-start space-x-3 p-3 rounded-lg border transition-all ${
+                className={`flex items-start space-x-3 p-3 rounded border transition-all ${
                   step.isComplete 
-                    ? "bg-emerald-50/20 border-emerald-100 text-slate-800" 
-                    : "bg-white border-slate-200 text-slate-500"
+                    ? "bg-emerald-950/5 border-emerald-950/40 text-emerald-500" 
+                    : "bg-neutral-950 border-neutral-900 text-neutral-500"
                 }`}
               >
                 {step.isComplete ? (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500 shrink-0 mt-0.5" />
                 ) : (
-                  <Circle className="h-5 w-5 text-slate-300 shrink-0 mt-0.5" />
+                  <Circle className="h-4.5 w-4.5 text-neutral-800 shrink-0 mt-0.5" />
                 )}
                 
                 <div className="flex-1 space-y-1 min-w-0">
-                  <h5 className={`text-xs font-bold leading-tight ${step.isComplete ? "text-slate-900" : "text-slate-700"}`}>
+                  <h5 className={`text-[11px] font-bold leading-tight uppercase tracking-wide ${step.isComplete ? "text-neutral-300" : "text-neutral-500"}`}>
                     {step.label}
                   </h5>
-                  <p className="text-[10px] text-slate-400 leading-snug">
+                  <p className="text-[9px] text-neutral-500 font-semibold leading-snug">
                     {step.desc}
                   </p>
                   
                   {!step.isComplete && step.link && (
                     <Link
                       to={step.link}
-                      className="inline-flex items-center space-x-1 text-[10px] font-black text-indigo-600 hover:text-indigo-500 hover:underline pt-1.5"
+                      className="inline-flex items-center space-x-1 text-[8.5px] font-black text-indigo-400 hover:text-indigo-300 pt-1.5 uppercase tracking-wider"
                     >
                       <span>Complete Task</span>
                       <ArrowRight className="h-2.5 w-2.5" />
@@ -286,14 +381,15 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
             ))}
           </div>
 
-          <div className="flex justify-end items-center space-x-4 border-t border-slate-100 pt-4">
+          {/* E. Action Toolbar (Skip) */}
+          <div className="flex justify-end items-center border-t border-neutral-900 pt-4">
             <button
               type="button"
               onClick={handleSkip}
-              className="flex items-center space-x-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
+              className="flex items-center space-x-1 text-[9px] font-bold text-neutral-600 hover:text-neutral-400 transition-colors uppercase tracking-wider cursor-pointer"
             >
-              <EyeOff className="h-3.5 w-3.5" />
-              <span>Skip Checklist & Hide Permanently</span>
+              <EyeOff className="h-3.5 w-3.5 shrink-0" />
+              <span>Skip Checklist & Hide</span>
             </button>
           </div>
         </div>
@@ -302,17 +398,3 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
     </div>
   );
 };
-
-// SVG Sparkles placeholder icon
-const SparklesIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    fill="none" 
-    viewBox="0 0 24 24" 
-    strokeWidth={2} 
-    stroke="currentColor" 
-    className={className}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 21l-.813-5.096L3 15l5.096-.813L9 9l.813 5.096L15 15l-5.187.904zM18 10.5l-.375 2.625L15 13.5l2.625.375L18 16.5l.375-2.625L21 13.5l-2.625-.375L18 10.5z" />
-  </svg>
-);

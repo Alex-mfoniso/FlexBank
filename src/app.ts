@@ -36,6 +36,7 @@ app.use(
       : env.CORS_ORIGIN,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID", "X-Project-ID", "x-project-id"],
+    exposedHeaders: ["X-Request-ID", "x-request-id"],
     credentials: true,
   }),
 );

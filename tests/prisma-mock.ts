@@ -763,6 +763,16 @@ export const prismaMock = {
       return store.webhookEvents[idx];
     }),
   },
+  webhookEndpoint: {
+    findMany: vi.fn(async () => {
+      return [];
+    }),
+  },
+  webhookDelivery: {
+    create: vi.fn(async ({ data }) => {
+      return { id: data.id || `whd_${crypto.randomUUID()}`, ...data, createdAt: new Date() };
+    }),
+  },
 };
 
 // In-memory key-value map simulating Redis command structures
