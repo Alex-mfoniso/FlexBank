@@ -54,7 +54,7 @@ export const Breadcrumbs: React.FC = () => {
       {crumbs.map((crumb, idx) => {
         const isLast = idx === crumbs.length - 1;
         return (
-          <React.Fragment key={crumb.path}>
+          <React.Fragment key={`${crumb.path}-${idx}`}>
             {idx > 0 && <ChevronRight className="h-3 w-3 text-neutral-800 shrink-0" />}
             {isLast ? (
               <span className="text-neutral-400 font-black truncate max-w-[120px] sm:max-w-[180px]">{crumb.label}</span>

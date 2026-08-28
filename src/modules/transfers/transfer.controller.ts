@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { TransferService } from "./transfer.service";
 import { CreateTransferSchema, QueryTransfersSchema } from "./transfer.schema";
 import { logger } from "../../lib/logger";
+import { ValidationError } from "../../lib/errors";
 
 function maskAccountNumber(accNum?: string): string {
   if (!accNum) return "";
@@ -17,7 +18,11 @@ export class TransferController {
       const projectId = req.apiKeyContext!.projectId;
       const idempotencyKey = req.header("Idempotency-Key") || "";
 
-      const body = CreateTransferSchema.parse(req.body);
+      const validation = CreateTransferSchema.safeParse(req.body);
+      if (!validation.success) {
+        return next(new ValidationError("Invalid transfer creation payload details", validation.error.format()));
+      }
+      const body = validation.data;
 
       // Mask sensitive beneficiary details in logs (Section 24)
       if (body.beneficiary) {
@@ -64,7 +69,11 @@ export class TransferController {
   list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const projectId = req.apiKeyContext!.projectId;
-      const query = QueryTransfersSchema.parse(req.query);
+      const validation = QueryTransfersSchema.safeParse(req.query);
+      if (!validation.success) {
+        return next(new ValidationError("Invalid transfer query filters", validation.error.format()));
+      }
+      const query = validation.data;
 
       const result = await this.service.listTransfers(projectId, query);
       res.status(200).json({ status: "success", ...result });

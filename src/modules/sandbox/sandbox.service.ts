@@ -67,7 +67,7 @@ export class SandboxService {
     // 5. Execute ledger-balanced atomic double-entry funding transaction
     return await prisma.$transaction(async (tx) => {
       const currency = account.currency.toUpperCase();
-      const treasuryId = `sandbox_treasury_${currency}`;
+      const treasuryId = `sandbox_treasury_${projectId}_${currency}`;
 
       // Resolve treasury ledger account (asset/equity source)
       let treasuryLedger = await tx.ledgerAccount.findFirst({

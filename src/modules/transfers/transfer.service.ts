@@ -115,6 +115,9 @@ export class TransferService {
       // 3. Handle Internal Transfer Flow
       if (input.type === "internal") {
         const destAccountId = input.destinationAccountId!;
+        if (input.sourceAccountId === destAccountId) {
+          throw new ValidationError("Source and destination accounts must be different");
+        }
         const destAcc = await tx.account.findUnique({
           where: { id: destAccountId },
         });
