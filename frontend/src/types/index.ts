@@ -10,6 +10,7 @@ export interface User {
   email: string;
   name: string;
   status: string;
+  role?: string;
   createdAt: string;
   memberships?: UserMembership[];
 }

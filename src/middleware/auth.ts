@@ -289,4 +289,29 @@ export const resolveProjectContext = async (req: Request, _res: Response, next: 
   }
 };
 
+/**
+ * Middleware to restrict route access strictly to platform administrators.
+ */
+export const authorizeAdmin = async (req: Request, _res: Response, next: NextFunction) => {
+  const user = req.user;
+  if (!user) {
+    return next(new UnauthorizedError("Authentication required"));
+  }
+
+  try {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true },
+    });
+
+    if (!dbUser || dbUser.role !== "admin") {
+      return next(new ForbiddenError("Access forbidden; administrative privileges required"));
+    }
+
+    next();
+  } catch (err) {
+    return next(err);
+  }
+};
+
 

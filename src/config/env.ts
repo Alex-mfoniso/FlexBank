@@ -12,6 +12,8 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   CORS_ORIGIN: z.string().min(1, "CORS_ORIGIN is required"),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters long"),
+  APP_NAME: z.string().default("Ricarut"),
+  APP_DESCRIPTION: z.string().default("Financial infrastructure for African developers"),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

@@ -36,6 +36,7 @@ import { Sandbox } from "./pages/Sandbox";
 import { Docs } from "./pages/Docs";
 import { Settings } from "./pages/Settings";
 import { Quickstart } from "./pages/Quickstart";
+import { AdminPanel } from "./pages/AdminPanel";
 
 export const App: React.FC = () => {
   return (
@@ -57,6 +58,7 @@ export const App: React.FC = () => {
           {/* Workspace level selector */}
           <Route element={<PrivateRoute />}>
             <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/admin" element={<AdminPanel />} />
             
             {/* Private workspace routes nested under Layout container */}
             <Route element={<Layout />}>

@@ -24,6 +24,7 @@ import { webhookController } from "./modules/webhooks/webhook.controller";
 import { sandboxController } from "./modules/sandbox/sandbox.controller";
 import { ledgerExplorerRoutes } from "./routes/ledger-explorer.routes";
 import { overviewRoutes } from "./routes/overview.routes";
+import { adminRoutes } from "./routes/admin.routes";
 
 const app = express();
 
@@ -71,6 +72,7 @@ v1Router.use("/test", sandboxController);
 v1Router.use("/", ledgerRoutes);
 v1Router.use("/", transferRoutes);
 v1Router.use("/docs", docsRoutes);
+v1Router.use("/admin", adminRoutes);
 
 // Core Developer API key verification test route
 v1Router.get("/auth/test-key", authenticateApiKey, (req, res) => {
