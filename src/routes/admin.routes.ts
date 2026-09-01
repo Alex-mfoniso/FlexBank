@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { authenticateUser, authorizeAdmin } from "../middleware/auth";
-import { ValidationError, NotFoundError, ForbiddenError } from "../lib/errors";
+import { ValidationError, NotFoundError } from "../lib/errors";
 
 const router = Router();
 
@@ -952,7 +952,7 @@ router.get("/sandbox", async (_req: Request, res: Response, next: NextFunction) 
  * GET /api/v1/admin/system
  * Returns overall system status check metadata. Excludes any sensitive keys or environments.
  */
-router.get("/system", async (_req: Request, res: Response, next: NextFunction) => {
+router.get("/system", async (_req: Request, res: Response) => {
   try {
     // Check DB liveness
     const dbCheck = await prisma.$queryRaw`SELECT 1 as liveness`;
