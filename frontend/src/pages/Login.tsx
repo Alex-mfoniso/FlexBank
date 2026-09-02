@@ -70,9 +70,9 @@ export const Login: React.FC = () => {
         
         <div className="flex items-center space-x-3 z-10">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 font-mono font-black text-lg shadow-lg shadow-indigo-600/30 border border-indigo-500/20">
-            F
+            R
           </div>
-          <span className="text-lg font-black tracking-tight uppercase font-mono">FlexBank</span>
+          <span className="text-lg font-black tracking-tight uppercase font-mono">Ricarut</span>
           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-neutral-900 border-neutral-800 text-indigo-400">
             Platform Sandbox
           </span>
@@ -106,7 +106,7 @@ export const Login: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-between text-xs text-neutral-600 z-10 font-mono">
-          <span>© 2026 FlexBank Inc.</span>
+          <span>© 2026 Ricarut Inc.</span>
           <a href="/docs" className="hover:text-neutral-400 transition-colors">
             Read platform specification
           </a>
@@ -119,9 +119,9 @@ export const Login: React.FC = () => {
           {/* Mobile view branding block */}
           <div className="flex items-center space-x-2 lg:hidden mb-8">
             <div className="flex h-8 w-8 items-center justify-center rounded bg-indigo-600 font-mono font-black text-white text-md">
-              F
+              R
             </div>
-            <span className="text-md font-bold tracking-tight text-white font-mono uppercase">FlexBank</span>
+            <span className="text-md font-bold tracking-tight text-white font-mono uppercase">Ricarut</span>
           </div>
 
           <div className="text-left space-y-2">

@@ -90,9 +90,9 @@ export const Signup: React.FC = () => {
         
         <div className="flex items-center space-x-3 z-10">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 font-mono font-black text-lg shadow-lg shadow-indigo-600/30 border border-indigo-500/20">
-            F
+            R
           </div>
-          <span className="text-lg font-black tracking-tight uppercase font-mono">FlexBank</span>
+          <span className="text-lg font-black tracking-tight uppercase font-mono">Ricarut</span>
           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-neutral-900 border-neutral-800 text-indigo-400">
             Platform Sandbox
           </span>
@@ -116,7 +116,7 @@ export const Signup: React.FC = () => {
                 <span className="text-indigo-400">api/v1/auth/register</span>
               </div>
               <pre className="text-[11px] text-neutral-300 overflow-x-auto select-all leading-relaxed">
-                {`curl -X POST "https://api.flexbank.dev/v1/auth/register" \\
+                {`curl -X POST "https://api.ricarut.com/v1/auth/register" \\
   -H "Content-Type: application/json" \\
   -d '{
     "email": "developer@startup.io",
@@ -130,7 +130,7 @@ export const Signup: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-between text-xs text-neutral-600 z-10 font-mono">
-          <span>© 2026 FlexBank Inc.</span>
+          <span>© 2026 Ricarut Inc.</span>
           <a href="/docs" className="hover:text-neutral-400 transition-colors">
             Terms of Service
           </a>
@@ -143,9 +143,9 @@ export const Signup: React.FC = () => {
           {/* Mobile view branding block */}
           <div className="flex items-center space-x-2 lg:hidden mb-8">
             <div className="flex h-8 w-8 items-center justify-center rounded bg-indigo-600 font-mono font-black text-white text-md">
-              F
+              R
             </div>
-            <span className="text-md font-bold tracking-tight text-white font-mono uppercase">FlexBank</span>
+            <span className="text-md font-bold tracking-tight text-white font-mono uppercase">Ricarut</span>
           </div>
 
           <div className="text-left space-y-2">
@@ -153,7 +153,7 @@ export const Signup: React.FC = () => {
               Create your developer account
             </h2>
             <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">
-              Build financial products with FlexBank. Start modeling financial ledgers and generating sandbox transfers.
+              Build financial products with Ricarut. Start modeling financial ledgers and generating sandbox transfers.
             </p>
           </div>
 
