@@ -46,7 +46,7 @@ export const Hero: React.FC<HeroProps> = ({ children }) => {
           {/* Readable supporting body */}
           <p className="text-xs sm:text-base text-neutral-400 leading-relaxed max-w-xl">
             Build accounts, wallets, transfers and payments through one developer-first API. 
-            FlexBank provides core ledger primitives so you can scale without rebuilding the financial foundation underneath.
+            Ricarut provides core ledger primitives so you can scale without rebuilding the financial foundation underneath.
           </p>
 
           {/* Action CTAs Group: Stacked on mobile, side-by-side on desktop */}

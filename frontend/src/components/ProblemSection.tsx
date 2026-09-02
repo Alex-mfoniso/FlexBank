@@ -57,7 +57,7 @@ export const ProblemSection: React.FC = () => {
         {/* Comparative Grid with animated transition on entry */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 max-w-6xl mx-auto">
           
-          {/* LEFT: WITHOUT FLEXBANK */}
+          {/* LEFT: WITHOUT RICARUT */}
           <div 
             className={`scroll-fade-initial space-y-6 ${
               isVisible ? "scroll-fade-active" : ""
@@ -70,7 +70,7 @@ export const ProblemSection: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-widest text-rose-500 font-mono">
-                    WITHOUT FLEXBANK
+                    WITHOUT RICARUT
                   </span>
                   <div className="flex items-center space-x-1 font-mono text-[9px] text-rose-500 font-bold uppercase select-none">
                     <X className="h-3.5 w-3.5" />
@@ -123,7 +123,7 @@ export const ProblemSection: React.FC = () => {
             </div>
           </div>
 
-          {/* RIGHT: WITH FLEXBANK */}
+          {/* RIGHT: WITH RICARUT */}
           <div 
             className={`scroll-fade-initial space-y-6 ${
               isVisible ? "scroll-fade-active" : ""
@@ -136,7 +136,7 @@ export const ProblemSection: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 font-mono">
-                    WITH FLEXBANK
+                    WITH RICARUT
                   </span>
                   <div className="flex items-center space-x-1 font-mono text-[9px] text-indigo-400 font-bold uppercase select-none">
                     <Check className="h-3.5 w-3.5" />
@@ -168,16 +168,16 @@ export const ProblemSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* FlexBank consolidation graph */}
+              {/* Ricarut consolidation graph */}
               <div className="border-t border-neutral-900/60 pt-6 space-y-3.5 font-mono select-none">
                 <div className="flex items-center justify-center space-x-3">
-                  <span className="px-2.5 py-1 rounded bg-neutral-950 border border-neutral-900 text-[9px] text-neutral-400 font-bold uppercase tracking-wider">
-                    Your Application
-                  </span>
-                  <ArrowDown className="h-3.5 w-3.5 text-indigo-500 -rotate-90" />
-                  <span className="px-2.5 py-1 rounded bg-indigo-950/40 border border-indigo-500/20 text-[9px] text-white font-black uppercase tracking-widest shadow-lg shadow-indigo-500/5">
-                    FLEXBANK
-                  </span>
+                   <span className="px-2.5 py-1 rounded bg-neutral-950 border border-neutral-900 text-[9px] text-neutral-400 font-bold uppercase tracking-wider">
+                     Your Application
+                   </span>
+                   <ArrowDown className="h-3.5 w-3.5 text-indigo-500 -rotate-90" />
+                   <span className="px-2.5 py-1 rounded bg-indigo-950/40 border border-indigo-500/20 text-[9px] text-white font-black uppercase tracking-widest shadow-lg shadow-indigo-500/5">
+                     RICARUT
+                   </span>
                   <ArrowDown className="h-3.5 w-3.5 text-indigo-500 -rotate-90" />
                   <span className="px-2.5 py-1 rounded bg-neutral-950 border border-neutral-900 text-[9px] text-neutral-400 font-bold uppercase tracking-wider font-mono">
                     Unified API

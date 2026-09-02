@@ -139,7 +139,7 @@ export const ApiDemo: React.FC = () => {
             <div className="w-full flex items-center justify-between">
               <div className="flex items-center space-x-2 text-amber-400 text-[10px]">
                 <div className="h-3 w-3 animate-spin rounded-full border border-amber-500/20 border-t-amber-400" />
-                <span className="font-bold uppercase tracking-wider">FlexBank Settle Engine Settle...</span>
+                <span className="font-bold uppercase tracking-wider">Ricarut Settle Engine Settle...</span>
               </div>
               <div className="flex-1 max-w-[120px] h-1 bg-neutral-900 rounded overflow-hidden ml-4">
                 <div 

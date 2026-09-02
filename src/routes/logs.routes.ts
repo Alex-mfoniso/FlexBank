@@ -85,7 +85,7 @@ router.get("/:requestId", authenticateUserOrApiKey, resolveProjectContext, async
 
     // 1. Establish robust default headers
     const requestHeaders: any = {
-      "host": "api.flexbank.dev",
+      "host": "api.ricarut.com",
       "accept": "application/json",
       "content-type": "application/json",
       "user-agent": "axios/1.6.0",
@@ -223,11 +223,11 @@ router.get("/:requestId", authenticateUserOrApiKey, resolveProjectContext, async
     } else if (pathLower.includes("/webhooks")) {
       if (log.method === "POST") {
         requestBody = {
-          url: "https://api.yourbackend.com/webhooks/flexbank",
+          url: "https://api.yourbackend.com/webhooks/ricarut",
         };
         responseBody = {
           id: "whe_3a4c5b6e7f8a",
-          url: "https://api.yourbackend.com/webhooks/flexbank",
+          url: "https://api.yourbackend.com/webhooks/ricarut",
           status: "active",
           secret: "[REDACTED FOR SECURITY SECURITY]",
           createdAt: log.createdAt,

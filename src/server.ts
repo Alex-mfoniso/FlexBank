@@ -9,7 +9,7 @@ import { Server } from "http";
 let server: Server;
 
 const startServer = async () => {
-  logger.info("Starting FlexBank API Service...");
+  logger.info("Starting Ricarut API Service...");
 
   try {
     // 1. Establish Database Connection (Prisma)
@@ -27,7 +27,7 @@ const startServer = async () => {
     server = app.listen(env.PORT, () => {
       logger.info(
         { port: env.PORT, nodeEnv: env.NODE_ENV },
-        "FlexBank API server listening for requests",
+        "Ricarut API server listening for requests",
       );
     });
   } catch (err) {
@@ -84,7 +84,7 @@ const handleGracefulShutdown = async (signal: string) => {
   }
 
   clearTimeout(forceExitTimeout);
-  logger.info("FlexBank API shutdown complete. Graceful termination complete.");
+  logger.info("Ricarut API shutdown complete. Graceful termination complete.");
   process.exit(0);
 };
 

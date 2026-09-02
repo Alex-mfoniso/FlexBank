@@ -29,7 +29,7 @@ export const ProductIntro: React.FC = () => {
             One API. Your entire financial infrastructure.
           </h2>
           <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed max-w-lg mx-auto">
-            FlexBank gives developers the building blocks to create financial products without managing every provider integration separately.
+            Ricarut gives developers the building blocks to create financial products without managing every provider integration separately.
           </p>
         </div>
 
@@ -45,7 +45,7 @@ export const ProductIntro: React.FC = () => {
             </p>
           </div>
 
-          {/* Connection Line 1: App -> FlexBank */}
+          {/* Connection Line 1: App -> Ricarut */}
           <div className="w-6 h-12">
             <svg className="w-full h-full overflow-visible" fill="none">
               <line x1="12" y1="0" x2="12" y2="48" stroke="#1f1f1f" strokeWidth="1.5" />
@@ -57,17 +57,17 @@ export const ProductIntro: React.FC = () => {
             </svg>
           </div>
 
-          {/* Node 2: FLEXBANK CORE GATEWAY */}
+          {/* Node 2: RICARUT CORE GATEWAY */}
           <div className="w-64 p-4.5 rounded border border-indigo-500/20 bg-indigo-950/25 text-center shadow-xl relative group transition-colors hover:border-indigo-500/30">
             <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-400/30 to-transparent" />
             <Server className="mx-auto h-5 w-5 text-indigo-400 mb-2 group-hover:scale-105 transition-transform" />
-            <h4 className="text-xs font-black text-white uppercase tracking-widest">FlexBank Engine</h4>
+            <h4 className="text-xs font-black text-white uppercase tracking-widest">Ricarut Engine</h4>
             <p className="text-[9px] text-indigo-300 font-bold font-mono uppercase tracking-wider mt-0.5">
               unified API gateway
             </p>
           </div>
 
-          {/* Connection Line 2: FlexBank -> Ledger Core Blocks */}
+          {/* Connection Line 2: Ricarut -> Ledger Core Blocks */}
           <div className="w-6 h-12">
             <svg className="w-full h-full overflow-visible" fill="none">
               <line x1="12" y1="0" x2="12" y2="48" stroke="#1f1f1f" strokeWidth="1.5" />

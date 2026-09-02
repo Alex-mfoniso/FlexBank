@@ -1,8 +1,9 @@
 import axios from "axios";
 
 // Centralized Backend URL resolver matching environmental definitions
-export const FLEXBANK_API_URL = import.meta.env.VITE_FLEXBANK_API_URL || "https://flexbank.onrender.com";
-const BASE_URL = import.meta.env.VITE_API_URL || FLEXBANK_API_URL;
+export const RICARUT_API_URL = import.meta.env.VITE_RICARUT_API_URL || import.meta.env.VITE_FLEXBANK_API_URL || "https://flexbank.onrender.com";
+export const FLEXBANK_API_URL = RICARUT_API_URL; // Compatibility alias
+const BASE_URL = import.meta.env.VITE_API_URL || RICARUT_API_URL;
 
 export const api = axios.create({
   baseURL: BASE_URL,

@@ -18,7 +18,7 @@ export const DeveloperFlow: React.FC = () => {
   const steps: FlowStep[] = [
     {
       num: "01",
-      title: "Create a FlexBank project",
+      title: "Create a Ricarut project",
       desc: "Instantly spin up a sandboxed double-entry project console from the dashboard. No vendor setup required.",
       icon: Terminal,
       visual: "agy init --project=my-digital-wallet",
@@ -28,7 +28,7 @@ export const DeveloperFlow: React.FC = () => {
       title: "Get your API key",
       desc: "Hydrate secure Bearer API key credentials to authorize your HTTP integrations in test mode.",
       icon: Key,
-      visual: "export FLEXBANK_API_KEY=\"fb_test_82ef10b9bc018a...\"",
+      visual: "export RICARUT_API_KEY=\"rc_test_82ef10b9bc018a...\"",
     },
     {
       num: "03",

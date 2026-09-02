@@ -78,15 +78,10 @@ export const LandingNavbar: React.FC = () => {
         <Link 
           to="/" 
           className="flex items-center space-x-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-1"
-          aria-label="FlexBank Home"
+          aria-label="Ricarut Home"
         >
-          <img
-            src={logoImg}
-            alt=""
-            className="h-7 w-7 rounded object-contain transition-transform group-hover:scale-105"
-          />
-          <span className="text-sm font-bold uppercase tracking-widest text-white">
-            FlexBank
+          <span className="text-base font-black uppercase tracking-widest text-white">
+            Ricarut
           </span>
         </Link>
 

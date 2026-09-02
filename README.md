@@ -1,6 +1,6 @@
-# FlexBank Backend MVP (Phase 1)
+# Ricarut Backend MVP (Phase 1)
 
-Welcome to the **FlexBank Backend MVP**. FlexBank is a developer-first fintech infrastructure platform providing unified APIs for financial capabilities.
+Welcome to the **Ricarut Backend MVP**. Ricarut is a developer-first fintech infrastructure platform providing unified APIs for financial capabilities.
 
 This repository implements **Phase 1: Foundation**, establishing a production-oriented modular backend, database migration pipelines, structured request logging, and robust lifecycle hooks.
 
@@ -38,7 +38,7 @@ cp .env.example .env
 The default values are fully optimized for the local Docker compose services:
 
 - `PORT=4000`
-- `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/flexbank`
+- `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ricarut`
 - `REDIS_URL=redis://localhost:6379`
 - `LOG_LEVEL=info`
 - `CORS_ORIGIN=http://localhost:3000`
@@ -115,7 +115,7 @@ Verifies that the Node process is active and responding.
 ```json
 {
   "status": "ok",
-  "service": "flexbank-api",
+  "service": "ricarut-api",
   "version": "0.1.0"
 }
 ```
@@ -145,7 +145,7 @@ Runs actual ping queries to verify PostgreSQL and Redis connectivity before sign
 The foundation is built using a highly clean, decoupled, and modular structure:
 
 ```text
-flexbank-backend/
+ricarut-backend/
 ├── prisma/               # Database schemas and migration tracking
 ├── src/
 │   ├── config/           # Safe Zod-validated environment config

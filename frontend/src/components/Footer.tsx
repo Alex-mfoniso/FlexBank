@@ -33,13 +33,8 @@ export const Footer: React.FC = () => {
               to="/" 
               className="flex items-center space-x-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-1"
             >
-              <img
-                src={logoImg}
-                alt=""
-                className="h-6 w-6 rounded object-contain"
-              />
-              <span className="text-xs font-black uppercase tracking-widest text-white">
-                FlexBank
+              <span className="text-sm font-black uppercase tracking-widest text-white">
+                Ricarut
               </span>
             </Link>
             <p className="text-[11px] text-neutral-500 leading-relaxed max-w-xs font-medium">
@@ -141,7 +136,7 @@ export const Footer: React.FC = () => {
               <h4 className="text-[9px] font-black uppercase tracking-wider text-neutral-400 font-mono">Company</h4>
               <ul className="space-y-2 text-[11px] font-semibold text-neutral-500">
                 <li>
-                  <span className="cursor-default text-neutral-600 font-medium">About FlexBank</span>
+                  <span className="cursor-default text-neutral-600 font-medium">About Ricarut</span>
                 </li>
                 <li>
                   <span className="cursor-default text-neutral-600 font-medium">Contact</span>
@@ -168,7 +163,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom copyright notice */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left select-none text-[10px] text-neutral-600 font-bold tracking-tight uppercase">
-          <p>© {currentYear} FlexBank Inc. All rights reserved.</p>
+          <p>© {currentYear} Ricarut Inc. All rights reserved.</p>
           <p>DEVELOPER INFRASTRUCTURE SERVICES • TEST MODE GATEWAY</p>
         </div>
 

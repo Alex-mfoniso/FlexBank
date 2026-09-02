@@ -54,7 +54,7 @@ export const Layout: React.FC = () => {
 
       if (!err.response || err.message === "Network Error") {
         status = 0;
-        message = "FlexBank could not connect to the API. Verify that the backend server is active.";
+        message = "Ricarut could not connect to the API. Verify that the backend server is active.";
       }
       setProjectError({ status, message });
     } finally {
@@ -129,10 +129,7 @@ export const Layout: React.FC = () => {
         <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-neutral-900 lg:bg-[#030303] font-mono h-full text-left">
           <div className="flex h-16 items-center px-6 border-b border-neutral-900 shrink-0">
             <Link to="/dashboard" className="flex items-center space-x-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded bg-indigo-600 font-black text-white text-md">
-                F
-              </div>
-              <span className="text-sm font-black uppercase tracking-widest text-white">FlexBank</span>
+              <span className="text-sm font-black uppercase tracking-widest text-white">Ricarut</span>
             </Link>
           </div>
           <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
@@ -193,7 +190,7 @@ export const Layout: React.FC = () => {
                 TEST MODE
               </span>
               <span className="text-neutral-400 font-semibold uppercase">
-                This project uses the FlexBank sandbox. No real money is involved.
+                This project uses the Ricarut sandbox. No real money is involved.
               </span>
             </div>
             <div className="hidden sm:block text-neutral-600 text-[8px] uppercase tracking-wider">
@@ -276,10 +273,7 @@ export const Layout: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-2.5 pb-6 border-b border-neutral-900">
-              <div className="flex h-7 w-7 items-center justify-center rounded bg-indigo-600 font-black text-white text-md">
-                F
-              </div>
-              <span className="text-sm font-black uppercase tracking-widest text-white">FlexBank</span>
+              <span className="text-sm font-black uppercase tracking-widest text-white">Ricarut</span>
             </div>
 
             <nav className="flex-1 overflow-y-auto py-6 space-y-6">

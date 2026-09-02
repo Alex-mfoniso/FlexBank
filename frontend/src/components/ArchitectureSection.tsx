@@ -39,7 +39,7 @@ export const ArchitectureSection: React.FC = () => {
             <p className="text-[10px] text-neutral-500 font-medium mt-1 font-mono">https://your-platform.com</p>
           </div>
 
-          {/* SVG Animated Connection Line down to FlexBank */}
+          {/* SVG Animated Connection Line down to Ricarut */}
           <div className="w-full h-12 flex justify-center">
             <svg className="w-6 h-full overflow-visible" fill="none">
               <line x1="12" y1="0" x2="12" y2="48" stroke="#1f1f1f" strokeWidth="1.5" />
@@ -51,13 +51,13 @@ export const ArchitectureSection: React.FC = () => {
             </svg>
           </div>
 
-          {/* Node 2: FLEXBANK API GATEWAY */}
+          {/* Node 2: RICARUT API GATEWAY */}
           <div className="w-72 p-5 rounded border border-indigo-500/20 bg-indigo-950/20 text-center shadow-xl relative group transition-colors hover:border-indigo-500/30">
             {/* Top highlight glow */}
             <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-400/30 to-transparent" />
             
             <Server className="mx-auto h-6 w-6 text-indigo-400 mb-2.5 group-hover:scale-105 transition-transform" />
-            <h4 className="text-xs font-black text-white uppercase tracking-widest">FlexBank API Core</h4>
+            <h4 className="text-xs font-black text-white uppercase tracking-widest">Ricarut API Core</h4>
             <p className="text-[9px] text-indigo-300 font-bold mt-1 font-mono uppercase tracking-wider">
               double-entry ledger settlement
             </p>

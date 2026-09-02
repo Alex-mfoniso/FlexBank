@@ -52,8 +52,8 @@ async function main() {
   const data1 = (await res1.json()) as any;
 
   console.log(` ✅ Transfer Initiated. Response Code: ${res1.status}`);
-  console.log(`    Status: ${data1.data?.status}`);
-  console.log(`    ID: ${data1.data?.id}\n`);
+  console.log(`    Status: ${data1.transfer?.status}`);
+  console.log(`    ID: ${data1.transfer?.id}\n`);
 
   // Verify database post-balances
   const walletA_post = await prisma.account.findUnique({ where: { id: "acc_adekunle_ngn_001" } });
@@ -85,7 +85,7 @@ async function main() {
   const data2 = (await res2.json()) as any;
 
   console.log(` ✅ Idempotent response captured! Status Code: ${res2.status}`);
-  console.log(`    Transfer status: ${data2.data?.status}`);
+  console.log(`    Transfer status: ${data2.transfer?.status}`);
   
   // Re-verify balances didn't change twice
   const walletA_idem = await prisma.account.findUnique({ where: { id: "acc_adekunle_ngn_001" } });

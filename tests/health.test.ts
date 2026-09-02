@@ -23,7 +23,7 @@ vi.mock("../src/lib/redis", () => {
 import { prisma } from "../src/lib/prisma";
 import { redis } from "../src/lib/redis";
 
-describe("FlexBank API Health Endpoints", () => {
+describe("Ricarut API Health Endpoints", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -35,7 +35,7 @@ describe("FlexBank API Health Endpoints", () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
         status: "ok",
-        service: "flexbank-api",
+        service: "ricarut-api",
         version: "0.1.0",
       });
     });

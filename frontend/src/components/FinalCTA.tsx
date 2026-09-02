@@ -17,7 +17,7 @@ export const FinalCTA: React.FC = () => {
         
         {/* Core Headline matching Phase 3 Section 4 precisely */}
         <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight uppercase font-sans">
-          Build your financial product on FlexBank.
+          Build your financial product on Ricarut.
         </h2>
 
         {/* Supporting Copy */}

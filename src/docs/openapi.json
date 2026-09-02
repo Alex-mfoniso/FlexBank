@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "FlexBank Developer API (Phase 2)",
+    "title": "Ricarut Developer API (Phase 2)",
     "description": "Unified financial infrastructure platform providing identity, organizations, project environments, and secure API keys management.",
     "version": "0.1.0"
   },
@@ -948,7 +948,7 @@
     "/ledger/transfers": {
       "post": {
         "summary": "Execute internal ledger transfer",
-        "description": "Performs an atomic, double-entry financial transfer between two FlexBank accounts. Amounts use minor units (e.g., NGN 1000000 = ₦10,000). Requires an Idempotency-Key header.",
+        "description": "Performs an atomic, double-entry financial transfer between two Ricarut accounts. Amounts use minor units (e.g., NGN 1000000 = ₦10,000). Requires an Idempotency-Key header.",
         "security": [
           {
             "BearerAuth": []

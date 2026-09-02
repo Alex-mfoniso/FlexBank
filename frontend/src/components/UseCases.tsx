@@ -107,7 +107,7 @@ export const UseCases: React.FC = () => {
             Build the product. We'll handle the infrastructure.
           </h2>
           <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed max-w-lg">
-            Assemble financial models programmatically. As FlexBank core capabilities expand, engineering teams can build complex applications seamlessly.
+            Assemble financial models programmatically. As Ricarut core capabilities expand, engineering teams can build complex applications seamlessly.
           </p>
         </div>
 

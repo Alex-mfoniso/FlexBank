@@ -252,7 +252,7 @@ describe("API Key Authentication and Management (Phase 2)", () => {
     const keyId = keyRes.body.id;
 
     expect(plaintextKey).toBeDefined();
-    expect(plaintextKey).toMatch(/^fb_test_[a-zA-Z0-9]{12}\.[a-zA-Z0-9]{32}$/);
+    expect(plaintextKey).toMatch(/^rc_test_[a-zA-Z0-9]{12}\.[a-zA-Z0-9]{32}$/);
     expect(keyRes.body.environment).toBe("test");
 
     // 4. Assert Database storage safety (No plaintext stored!)

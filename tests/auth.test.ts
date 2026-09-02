@@ -126,7 +126,7 @@ describe("Authentication & Registration (Phase 2)", () => {
   describe("POST /api/v1/auth/register", () => {
     it("should successfully register a developer and automatically create a default organization as owner", async () => {
       const payload = {
-        email: "Alex@FlexBank.COM", // Pass with mixed case to verify email normalization
+        email: "Alex@Ricarut.com", // Pass with mixed case to verify email normalization
         password: "SecurePassword123",
         firstName: "Alexander",
         lastName: "Great",
@@ -140,14 +140,14 @@ describe("Authentication & Registration (Phase 2)", () => {
       // 1. Verify response shape
       expect(res.body).toHaveProperty("token");
       expect(res.body.user).toBeDefined();
-      expect(res.body.user.email).toBe("alex@flexbank.com"); // Assert email was normalized
+      expect(res.body.user.email).toBe("alex@ricarut.com"); // Assert email was normalized
       expect(res.body.user.firstName).toBe("Alexander");
       expect(res.body.user.lastName).toBe("Great");
       expect(res.body.user.passwordHash).toBeUndefined(); // Verify password hash is never leaked
 
       // 2. Verify database records
       const user = await prisma.user.findUnique({
-        where: { email: "alex@flexbank.com" },
+        where: { email: "alex@ricarut.com" },
         include: {
           memberships: {
             include: {

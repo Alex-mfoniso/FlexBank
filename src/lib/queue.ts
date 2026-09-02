@@ -11,7 +11,7 @@ export class QueueManager {
    */
   static async enqueue(queueName: string, payload: any): Promise<void> {
     try {
-      const queueKey = `flexbank:queue:${queueName}`;
+      const queueKey = `ricarut:queue:${queueName}`;
       await redis.lpush(queueKey, JSON.stringify(payload));
       logger.debug({ queueKey, payload }, "Asynchronous job enqueued successfully");
     } catch (err) {
@@ -25,7 +25,7 @@ export class QueueManager {
    */
   static async enqueueDelayed(queueName: string, payload: any, delayMs: number): Promise<void> {
     try {
-      const delayKey = `flexbank:delayed:${queueName}`;
+      const delayKey = `ricarut:delayed:${queueName}`;
       const executeAt = Date.now() + delayMs;
       await redis.zadd(delayKey, executeAt, JSON.stringify(payload));
       logger.debug({ delayKey, payload, executeAt }, "Delayed job scheduled successfully");

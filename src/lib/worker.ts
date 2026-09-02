@@ -34,7 +34,7 @@ export class BackgroundWorker {
   start(): void {
     if (this.running) return;
     this.running = true;
-    logger.info("Initializing FlexBank background job worker...");
+    logger.info("Initializing Ricarut background job worker...");
 
     // Spawn polling loop
     this.poll();
@@ -60,8 +60,8 @@ export class BackgroundWorker {
   }
 
   private async promoteDelayedJobs(): Promise<void> {
-    const delayKey = "flexbank:delayed:webhooks";
-    const queueKey = "flexbank:queue:webhooks";
+    const delayKey = "ricarut:delayed:webhooks";
+    const queueKey = "ricarut:queue:webhooks";
     const now = Date.now();
 
     try {
@@ -81,7 +81,7 @@ export class BackgroundWorker {
   }
 
   private async poll(): Promise<void> {
-    const queueKey = "flexbank:queue:webhooks";
+    const queueKey = "ricarut:queue:webhooks";
 
     while (this.running) {
       try {
@@ -130,9 +130,11 @@ export class BackgroundWorker {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-Ricarut-Event-Id": eventId,
           "X-FlexBank-Event-Id": eventId,
+          "X-Ricarut-Signature": signatureHeader,
           "X-FlexBank-Signature": signatureHeader,
-          "User-Agent": "FlexBank-Webhook-Dispatcher/1.0",
+          "User-Agent": "Ricarut-Webhook-Dispatcher/1.0",
         },
         body: payloadStr,
         signal: AbortSignal.timeout(10000), // Abort after 10 seconds timeout

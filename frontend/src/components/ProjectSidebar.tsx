@@ -53,10 +53,7 @@ export const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ projectId, proje
       {/* Brand Header */}
       <div className="flex h-16 items-center px-6 border-b border-neutral-900 shrink-0">
         <Link to="/dashboard" className="flex items-center space-x-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded bg-indigo-600 font-black text-white text-md shadow-md shadow-indigo-600/10">
-            F
-          </div>
-          <span className="text-sm font-black uppercase tracking-widest text-white">FlexBank</span>
+          <span className="text-sm font-black uppercase tracking-widest text-white">Ricarut</span>
         </Link>
       </div>
 

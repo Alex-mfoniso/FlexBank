@@ -65,7 +65,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
       setHasApiLog(projectLogs.length > 0);
 
       // 4. Retrieve logs view status from local storage
-      const logsViewed = localStorage.getItem(`flexbank_onboarding_${projectId}_viewed_logs`);
+      const logsViewed = localStorage.getItem(`ricarut_onboarding_${projectId}_viewed_logs`);
       setHasViewedLogs(logsViewed === "true");
 
     } catch (err) {
@@ -76,7 +76,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
   };
 
   useEffect(() => {
-    const skipFlag = localStorage.getItem(`flexbank_skip_onboarding_${projectId}`);
+    const skipFlag = localStorage.getItem(`ricarut_skip_onboarding_${projectId}`);
     if (skipFlag === "true") {
       setIsSkipped(true);
     }
@@ -112,7 +112,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
   };
 
   const handleSkip = () => {
-    localStorage.setItem(`flexbank_skip_onboarding_${projectId}`, "true");
+    localStorage.setItem(`ricarut_skip_onboarding_${projectId}`, "true");
     setIsSkipped(true);
   };
 
@@ -178,7 +178,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
         <button
           type="button"
           onClick={() => {
-            localStorage.removeItem(`flexbank_skip_onboarding_${projectId}`);
+            localStorage.removeItem(`ricarut_skip_onboarding_${projectId}`);
             setIsSkipped(false);
             fetchOnboardingState();
           }}
@@ -315,7 +315,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ projec
                 <h4 className="text-xs font-black uppercase tracking-wider text-white">YOU'RE READY</h4>
               </div>
               <p className="text-[10px] text-neutral-400 leading-relaxed font-semibold max-w-xl">
-                Your FlexBank sandbox is fully initialized and operational. Your API credentials, ledger accounts, and customer balances have successfully cleared the double-entry simulation framework. You're ready to integrate your production backend!
+                Your Ricarut sandbox is fully initialized and operational. Your API credentials, ledger accounts, and customer balances have successfully cleared the double-entry simulation framework. You're ready to integrate your production backend!
               </p>
 
               <div className="flex flex-col sm:flex-row gap-2.5 pt-2 text-[10px] font-bold uppercase tracking-wider">

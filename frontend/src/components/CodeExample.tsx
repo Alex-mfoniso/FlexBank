@@ -16,8 +16,8 @@ export const CodeExample: React.FC = () => {
     {
       label: "cURL",
       lang: "bash",
-      code: `curl -X POST "https://api.flexbank.dev/v1/transfers" \\
-  -H "Authorization: Bearer fb_test_7f92ac81bc0" \\
+      code: `curl -X POST "https://api.ricarut.com/v1/transfers" \\
+  -H "Authorization: Bearer rc_test_7f92ac81bc0" \\
   -H "Content-Type: application/json" \\
   -d '{
     "type": "internal",
@@ -32,10 +32,10 @@ export const CodeExample: React.FC = () => {
       label: "JavaScript",
       lang: "javascript",
       code: `// Initiate double-entry ledger settlement in the client
-const response = await fetch("https://api.flexbank.dev/v1/transfers", {
+const response = await fetch("https://api.ricarut.com/v1/transfers", {
   method: "POST",
   headers: {
-    "Authorization": "Bearer fb_test_7f92ac81bc0",
+    "Authorization": "Bearer rc_test_7f92ac81bc0",
     "Content-Type": "application/json"
   },
   body: JSON.stringify({
@@ -60,7 +60,7 @@ const axios = require('axios');
 async function executeTransfer() {
   try {
     const response = await axios.post(
-      'https://api.flexbank.dev/v1/transfers',
+      'https://api.ricarut.com/v1/transfers',
       {
         type: 'internal',
         sourceAccountId: 'acc_881cf712',
@@ -71,7 +71,7 @@ async function executeTransfer() {
       },
       {
         headers: {
-          'Authorization': 'Bearer fb_test_7f92ac81bc0',
+          'Authorization': 'Bearer rc_test_7f92ac81bc0',
           'Content-Type': 'application/json'
         }
       }
@@ -103,7 +103,7 @@ executeTransfer();`,
           </h2>
 
           <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed max-w-xl">
-            Integrate FlexBank's REST gateway using standard HTTP headers and JSON bodies. 
+            Integrate Ricarut's REST gateway using standard HTTP headers and JSON bodies. 
             All responses return transparent standard HTTP status codes, explicit error messages, and auditable parameter trace IDs.
           </p>
 

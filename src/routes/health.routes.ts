@@ -8,7 +8,7 @@ const router = Router();
 router.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({
     status: "ok",
-    service: "flexbank-api",
+    service: "ricarut-api",
     version: "0.1.0",
   });
 });

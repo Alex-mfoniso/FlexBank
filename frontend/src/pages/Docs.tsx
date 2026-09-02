@@ -156,20 +156,20 @@ export const Docs: React.FC = () => {
       id: "overview",
       category: "GETTING STARTED",
       title: "Introduction",
-      description: "Build financial products with FlexBank",
-      details: `Welcome to FlexBank, the financial infrastructure API platform designed for developers and startups.
+      description: "Build financial products with Ricarut",
+      details: `Welcome to Ricarut, the financial infrastructure API platform designed for developers and startups.
 
-FlexBank is a double-entry ledger database, digital banking wallet processor, and transfer simulator packaged under a clean REST JSON specification. Developers use FlexBank to build fintech products, digital wallets, double-entry systems, and platform payout engines without stitching multiple commercial providers together manually.
+Ricarut is a double-entry ledger database, digital banking wallet processor, and transfer simulator packaged under a clean REST JSON specification. Developers use Ricarut to build fintech products, digital wallets, double-entry systems, and platform payout engines without stitching multiple commercial providers together manually.
 
 > [!IMPORTANT]
 > **SANDBOX MODE BOUNDARY**
-> All ledger operations, test wallets, and transfer settlements operated under API keys starting with \`fb_test_\` run in a mock sandbox sandbox clearing house. No real money or live financial rails are involved. Live production rails are currently setup-pending/inactive.`,
+> All ledger operations, test wallets, and transfer settlements operated under API keys starting with \`rc_test_\` (or legacy \`fb_test_\`) run in a mock sandbox clearing house. No real money or live financial rails are involved. Live production rails are currently setup-pending/inactive.`,
     },
     {
       id: "quickstart",
       category: "GETTING STARTED",
       title: "7-Step Quickstart",
-      description: "Make your first FlexBank API request in minutes",
+      description: "Make your first Ricarut API request in minutes",
       details: `Follow this 7-step guide to configure your project, authenticate your API channels, and run ledger transactions.
 
 ---
@@ -183,22 +183,22 @@ Navigate to the [API Keys page](/projects/${selectedProjectId || "your-project-i
 ### Step 3: Establish environment variables
 Declare the gateway host and credentials inside your server-side environments:
 \`\`\`bash
-FLEXBANK_API_URL="${FLEXBANK_API_URL}"
-FLEXBANK_API_KEY="your_copied_secret_api_key"
+RICARUT_API_URL="${FLEXBANK_API_URL}"
+RICARUT_API_KEY="your_copied_secret_api_key"
 \`\`\`
 
 ### Step 4: Make your first API request
 Validate credentials and fetch connection context by making a call to the \`GET /api/v1/auth/test-key\` endpoint:
 \`\`\`bash
 curl -X GET "${FLEXBANK_API_URL}/api/v1/auth/test-key" \\
-  -H "Authorization: Bearer fb_test_xxxxxxxx"
+  -H "Authorization: Bearer rc_test_xxxxxxxx"
 \`\`\`
 
 ### Step 5: Provision a Customer
 Create a ledger holder representing a legal business or individual using \`POST /api/v1/customers\`:
 \`\`\`bash
 curl -X POST "${FLEXBANK_API_URL}/api/v1/customers" \\
-  -H "Authorization: Bearer fb_test_xxxxxxxx" \\
+  -H "Authorization: Bearer rc_test_xxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
     "externalId": "ext_cust_001",
@@ -212,7 +212,7 @@ curl -X POST "${FLEXBANK_API_URL}/api/v1/customers" \\
 Issue a virtual multi-currency ledger wallet associated with the customer using \`POST /api/v1/accounts\`:
 \`\`\`bash
 curl -X POST "${FLEXBANK_API_URL}/api/v1/accounts" \\
-  -H "Authorization: Bearer fb_test_xxxxxxxx" \\
+  -H "Authorization: Bearer rc_test_xxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
     "customerId": "cust_xxxxxx",
@@ -229,11 +229,11 @@ Fund the sandbox wallet using \`POST /api/v1/test/accounts/:accountId/fund\`, th
       category: "GETTING STARTED",
       title: "Authentication",
       description: "Secure REST channels using standard Bearer tokens",
-      details: `FlexBank authenticates REST requests using workspace API Keys. Pass your secret key inside the Authorization header. Private keys are environment-scoped: keys starting with \`fb_test_\` operate strictly in the Test Environment, and keys starting with \`fb_live_\` run live processes (setup pending).
+      details: `Ricarut authenticates REST requests using workspace API Keys. Pass your secret key inside the Authorization header. Private keys are environment-scoped: keys starting with \`rc_test_\` (or legacy \`fb_test_\`) operate strictly in the Test Environment, and keys starting with \`rc_live_\` (or legacy \`fb_live_\`) run live processes (setup pending).
 
 Example Authorization Header:
 \`\`\`http
-Authorization: Bearer fb_test_7f92ac81bc09e9921c5f8df6a3e1a0b3
+Authorization: Bearer rc_test_7f92ac81bc09e9921c5f8df6a3e1a0b3
 \`\`\`
 
 > [!WARNING]
@@ -245,7 +245,7 @@ Authorization: Bearer fb_test_7f92ac81bc09e9921c5f8df6a3e1a0b3
       category: "GETTING STARTED",
       title: "Webhook Signatures",
       description: "Validate digital event deliveries cryptographic HMAC",
-      details: `To prevent spoofing or replay attacks, verify incoming webhook bodies using the \`x-flexbank-signature\` header. FlexBank computes an HMAC hex signature of the raw JSON body using your webhook endpoint's secure signing secret (returned once during creation).
+      details: `To prevent spoofing or replay attacks, verify incoming webhook bodies using the \`x-ricarut-signature\` (or legacy \`x-flexbank-signature\`) header. Ricarut computes an HMAC hex signature of the raw JSON body using your webhook endpoint's secure signing secret (returned once during creation).
 
 ### Python Signature Verification Sample:
 \`\`\`python
@@ -272,7 +272,7 @@ function verifySignature(payloadBody, headerSig, secret) {
     .digest("hex");
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(headerSig));
 }
-\`\`\` `
+\`\`\``
     },
     {
       id: "errors",

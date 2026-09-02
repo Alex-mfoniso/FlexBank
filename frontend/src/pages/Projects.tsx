@@ -83,10 +83,10 @@ export const Projects: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-8 border-b border-neutral-900 gap-4">
           <div className="flex items-center space-x-3 text-left">
             <div className="flex h-9 w-9 items-center justify-center rounded bg-indigo-600 font-black text-white text-lg shadow-md shadow-indigo-600/20">
-              F
+              R
             </div>
             <div>
-              <h1 className="text-lg font-black text-white uppercase leading-none">FlexBank Console</h1>
+              <h1 className="text-lg font-black text-white uppercase leading-none">Ricarut Console</h1>
               <p className="text-[10px] text-neutral-500 mt-1 leading-normal font-medium">Select a project context workspace to access developer credentials and ledger histories</p>
             </div>
           </div>
@@ -125,7 +125,7 @@ export const Projects: React.FC = () => {
                 <FolderDot className="mx-auto h-12 w-12 text-neutral-700" />
                 <h3 className="mt-4 text-xs font-bold text-white uppercase tracking-wider font-mono">No projects yet.</h3>
                 <p className="mt-2 text-[11px] text-neutral-500 max-w-sm mx-auto leading-relaxed">
-                  Create a project to start building with FlexBank. Project workspaces segregate distinct sandbox credentials, webhook endpoints, and customer lists.
+                  Create a project to start building with Ricarut. Project workspaces segregate distinct sandbox credentials, webhook endpoints, and customer lists.
                 </p>
                 <p className="mt-4 text-[11px] font-bold text-indigo-400 font-mono">
                   Use the registration workspace form to initialize your first project →

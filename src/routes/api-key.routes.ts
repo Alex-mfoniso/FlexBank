@@ -137,7 +137,7 @@ router.post(
       const randomPrefix = generateSecureString(12);
       const randomSecret = generateSecureString(32);
       
-      const keyPrefix = `fb_${envTag}_${randomPrefix}`;
+      const keyPrefix = `rc_${envTag}_${randomPrefix}`;
       const plaintextKey = `${keyPrefix}.${randomSecret}`;
 
       // 2. Hash the entire key using SHA256 to ensure complete safety from leaks

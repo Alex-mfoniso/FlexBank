@@ -84,7 +84,7 @@ export const SandboxConsole: React.FC = () => {
             <div className="flex items-center space-x-2">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
               <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                FLEXBANK SANDBOX CONSOLE
+                RICARUT SANDBOX CONSOLE
               </span>
             </div>
 
@@ -206,7 +206,7 @@ export const SandboxConsole: React.FC = () => {
               Simulated Testing Environments
             </span>
             <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight uppercase font-mono">
-              Try the FlexBank sandbox.
+              Try the Ricarut sandbox.
             </h3>
             <p className="text-[10px] text-neutral-500 font-medium leading-relaxed">
               Interact with the full API lifecycle, inspect transfer journals, and trigger simulated webhooks in a safe sandboxed ecosystem.

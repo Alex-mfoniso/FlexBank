@@ -92,7 +92,7 @@ export const ApiKeys: React.FC = () => {
 
   const handleRevokeKey = async (keyId: string) => {
     if (!projectId) return;
-    const confirmMsg = "Revoke this API key? Applications using this key will no longer be able to authenticate with FlexBank.";
+    const confirmMsg = "Revoke this API key? Applications using this key will no longer be able to authenticate with Ricarut.";
     
     if (!window.confirm(confirmMsg)) {
       return;
@@ -135,7 +135,7 @@ export const ApiKeys: React.FC = () => {
         <div>
           <h1 className="text-xl font-black text-white uppercase tracking-tight">API Keys</h1>
           <p className="text-[10px] text-neutral-500 font-semibold mt-1">
-            Manage the credentials your applications use to access this FlexBank project.
+            Manage the credentials your applications use to access this Ricarut project.
           </p>
         </div>
         <button
@@ -183,7 +183,7 @@ export const ApiKeys: React.FC = () => {
               ● TEST MODE
             </span>
             <p className="text-[10px] font-semibold text-neutral-500 leading-relaxed">
-              API keys created here only access the FlexBank sandbox. All financial flows are fully simulated.
+              API keys created here only access the Ricarut sandbox. All financial flows are fully simulated.
             </p>
           </div>
           

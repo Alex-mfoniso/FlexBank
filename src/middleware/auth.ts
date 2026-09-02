@@ -78,8 +78,8 @@ export const authenticateUser = async (req: Request, _res: Response, next: NextF
   }
 };
 
-// Stripe-style format regex: fb_[test/live]_[12_char_prefix].[32_char_secret]
-const API_KEY_REGEX = /^fb_(test|live)_([a-zA-Z0-9]{12})\.([a-zA-Z0-9]{32})$/;
+// Stripe-style format regex: [fb/rc]_[test/live]_[12_char_prefix].[32_char_secret]
+const API_KEY_REGEX = /^(fb|rc)_(test|live)_([a-zA-Z0-9]{12})\.([a-zA-Z0-9]{32})$/;
 
 /**
  * Express middleware to authenticate developer API requests using structured project keys.
@@ -99,7 +99,7 @@ export const authenticateApiKey = async (req: Request, _res: Response, next: Nex
     return next(new UnauthorizedError("Invalid API key format"));
   }
 
-  const keyPrefix = `fb_${match[1]}_${match[2]}`;
+  const keyPrefix = `${match[1]}_${match[2]}_${match[3]}`;
 
   try {
     // 1. Efficient prefix indexing query
@@ -233,7 +233,7 @@ export const authenticateUserOrApiKey = async (req: Request, res: Response, next
 
   const token = authHeader.split(" ")[1];
 
-  if (token.startsWith("fb_test_") || token.startsWith("fb_live_")) {
+  if (token.startsWith("fb_test_") || token.startsWith("fb_live_") || token.startsWith("rc_test_") || token.startsWith("rc_live_")) {
     return authenticateApiKey(req, res, next);
   } else {
     return authenticateUser(req, res, next);
