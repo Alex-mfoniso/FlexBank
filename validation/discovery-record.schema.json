@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ricarut.example/schemas/discovery-record.schema.json",
+  "title": "Ricarut customer discovery record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "company", "companyType", "country", "contact", "status", "evidence", "painScore", "qualification"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "company": { "type": "string", "minLength": 1 },
+    "companyType": { "type": "string", "minLength": 1 },
+    "companySize": { "type": ["string", "null"] },
+    "country": { "type": "string", "minLength": 2 },
+    "contact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "role", "channel", "technicalDecisionMaker", "economicBuyer"],
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "channel": { "type": "string" },
+        "technicalDecisionMaker": { "type": ["boolean", "null"] },
+        "economicBuyer": { "type": ["boolean", "null"] }
+      }
+    },
+    "currentProviders": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "providerCount": { "type": ["integer", "null"], "minimum": 0 },
+    "financialWorkflows": { "type": "array", "items": { "type": "string" } },
+    "painPoints": { "type": "array", "items": { "type": "string" } },
+    "integrationDifficulty": { "type": ["string", "null"] },
+    "reconciliationDifficulty": { "type": ["string", "null"] },
+    "providerFailureExperience": { "type": ["string", "null"] },
+    "estimatedEngineeringCost": { "$ref": "#/$defs/labeledValue" },
+    "estimatedOperationalCost": { "$ref": "#/$defs/labeledValue" },
+    "currentWorkaround": { "type": ["string", "null"] },
+    "willingnessToTest": { "type": ["boolean", "null"] },
+    "willingnessToPilot": { "type": ["boolean", "null"] },
+    "willingnessToPay": { "enum": ["YES", "NO", "CONDITIONAL", "UNKNOWN"] },
+    "proposedPrice": { "$ref": "#/$defs/labeledValue" },
+    "objections": { "type": "array", "items": { "type": "string" } },
+    "followUpDate": { "type": ["string", "null"], "format": "date" },
+    "status": { "enum": ["PROSPECT", "CONTACTED", "INTERVIEWED", "QUALIFIED", "DESIGN_PARTNER", "PILOT", "PAID", "LOST", "NOT_ICP"] },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "statement", "sourceDate", "publicationPermission"],
+        "properties": {
+          "kind": { "enum": ["DIRECT_QUOTE", "OBSERVED_BEHAVIOR", "CLAIM", "ASSUMPTION"] },
+          "statement": { "type": "string", "minLength": 1 },
+          "sourceDate": { "type": "string", "format": "date" },
+          "artifactReference": { "type": ["string", "null"] },
+          "publicationPermission": { "enum": ["NONE", "INTERNAL_ONLY", "ANONYMIZED", "PUBLIC"] }
+        }
+      }
+    },
+    "painScore": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["frequency", "financialImpact", "engineeringEffort", "operationalEffort", "urgency", "workaroundWeakness", "total", "band"],
+      "properties": {
+        "frequency": { "$ref": "#/$defs/score" },
+        "financialImpact": { "$ref": "#/$defs/score" },
+        "engineeringEffort": { "$ref": "#/$defs/score" },
+        "operationalEffort": { "$ref": "#/$defs/score" },
+        "urgency": { "$ref": "#/$defs/score" },
+        "workaroundWeakness": { "$ref": "#/$defs/score" },
+        "total": { "type": "integer", "minimum": 6, "maximum": 30 },
+        "band": { "enum": ["LOW", "MEDIUM", "HIGH", "EXTREME"] }
+      }
+    },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["problemExistsToday", "measurableCost", "willingToTest", "providesTechnicalFeedback", "realisticPathToPayment"],
+      "properties": {
+        "problemExistsToday": { "type": ["boolean", "null"] },
+        "measurableCost": { "type": ["boolean", "null"] },
+        "willingToTest": { "type": ["boolean", "null"] },
+        "providesTechnicalFeedback": { "type": ["boolean", "null"] },
+        "realisticPathToPayment": { "type": ["boolean", "null"] }
+      }
+    }
+  },
+  "$defs": {
+    "score": { "type": "integer", "minimum": 1, "maximum": 5 },
+    "labeledValue": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["amount", "currency", "label", "basis"],
+      "properties": {
+        "amount": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "minLength": 3, "maxLength": 3 },
+        "label": { "enum": ["CUSTOMER_PROVIDED", "ASSUMED"] },
+        "basis": { "type": "string" }
+      }
+    }
+  }
+}
+

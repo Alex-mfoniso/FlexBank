@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "asOf": null,
+  "actual": {
+    "prospects": 0,
+    "contacted": 0,
+    "interviews": 0,
+    "qualified": 0,
+    "designPartners": 0,
+    "technicalPilots": 0,
+    "paidPilots": 0,
+    "productionCustomers": 0,
+    "pricingConversations": 0,
+    "proposals": 0,
+    "mrr": 0,
+    "arr": 0,
+    "activeExternalDevelopers": 0,
+    "activeExternalProjects": 0,
+    "externalApiCalls": 0,
+    "successfulExternalApiCalls": 0,
+    "failedExternalApiCalls": 0,
+    "externalSandboxTransfers": 0,
+    "realProviderSandboxIntegrations": 0,
+    "customerQuotesWithPermission": 0,
+    "caseStudies": 0
+  },
+  "targets": {
+    "prospects": 100,
+    "interviews": 30,
+    "qualified": 10,
+    "designPartners": 5,
+    "technicalPilots": 3,
+    "paidPilots": 2
+  },
+  "assumed": {},
+  "notes": [
+    "All actual values start at zero because no external evidence has been entered.",
+    "Repository seed data, automated tests, internal users and sandbox transactions are excluded."
+  ]
+}
+

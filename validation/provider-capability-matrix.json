@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "lastVerified": "2026-09-04",
+  "providers": [
+    {
+      "provider": "fake-provider",
+      "evidenceLabel": "CURRENT",
+      "environment": "LOCAL_SANDBOX_ONLY",
+      "capabilities": ["TRANSFER", "PAYMENT", "WEBHOOK"],
+      "countries": ["SIMULATED"],
+      "currencies": ["SIMULATED"],
+      "operations": ["CREATE_TRANSFER", "GET_TRANSFER", "PARSE_WEBHOOK"],
+      "statusSupport": ["PROCESSING", "SUCCESSFUL", "FAILED"],
+      "webhookSupport": true,
+      "idempotency": "RICARUT_ONLY_NOT_PROVIDER_VALIDATED",
+      "limits": "SANDBOX_APPLICATION_LIMITS_ONLY",
+      "settlementBehavior": "SIMULATED_LEDGER_SETTLEMENT",
+      "reconciliation": "NOT_IMPLEMENTED",
+      "source": "src/modules/providers/adapters/fake-provider/fake-provider.adapter.ts"
+    }
+  ],
+  "candidateProviderA": null,
+  "candidateProviderB": null,
+  "selectionRule": "Select one provider sandbox for payouts only after customer evidence identifies the workflow and provider. Select Provider B for behavioral difference, not convenience."
+}
+

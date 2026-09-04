@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "errors": [
+    { "code": "VALIDATION_ERROR", "retry": "DO_NOT_RETRY", "recoveryState": "CORRECT_REQUEST" },
+    { "code": "AUTHENTICATION_ERROR", "retry": "DO_NOT_RETRY", "recoveryState": "ROTATE_OR_CORRECT_CREDENTIALS" },
+    { "code": "AUTHORIZATION_ERROR", "retry": "DO_NOT_RETRY", "recoveryState": "REVIEW_PERMISSIONS" },
+    { "code": "INSUFFICIENT_FUNDS", "retry": "DO_NOT_RETRY_UNCHANGED", "recoveryState": "FUND_OR_CHANGE_SOURCE" },
+    { "code": "BENEFICIARY_ERROR", "retry": "DO_NOT_RETRY_UNCHANGED", "recoveryState": "CORRECT_BENEFICIARY" },
+    { "code": "PROVIDER_UNAVAILABLE", "retry": "RETRY_WITH_POLICY", "recoveryState": "SAFE_TO_RETRY_ONLY_IF_NOT_ACCEPTED" },
+    { "code": "TIMEOUT", "retry": "DO_NOT_BLINDLY_RETRY", "recoveryState": "QUERY_PROVIDER_THEN_RECONCILE" },
+    { "code": "DUPLICATE_REQUEST", "retry": "RETURN_OR_QUERY_ORIGINAL", "recoveryState": "RESOLVE_ORIGINAL_REQUEST" },
+    { "code": "PROCESSING", "retry": "POLL_OR_WAIT_FOR_WEBHOOK", "recoveryState": "NON_TERMINAL" },
+    { "code": "REJECTED", "retry": "DO_NOT_RETRY_UNCHANGED", "recoveryState": "REVIEW_PROVIDER_REASON" },
+    { "code": "FAILED", "retry": "POLICY_DEPENDENT", "recoveryState": "TERMINAL_FAILURE" },
+    { "code": "UNKNOWN", "retry": "DO_NOT_BLINDLY_RETRY", "recoveryState": "MANUAL_REVIEW_AND_RECONCILE" }
+  ],
+  "requiredMappingFields": [
+    "canonicalError",
+    "providerErrorCode",
+    "providerMessageRedacted",
+    "providerRequestId",
+    "recoveryState"
+  ],
+  "securityRule": "Raw provider payloads and credentials must not be exposed to end users. Preserve restricted diagnostic detail separately."
+}

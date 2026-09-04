@@ -1,0 +1,41 @@
+{
+  "id": "replace-with-stable-id",
+  "company": "",
+  "companyType": "",
+  "companySize": null,
+  "country": "NG",
+  "contact": {
+    "name": "",
+    "role": "",
+    "channel": "",
+    "technicalDecisionMaker": null,
+    "economicBuyer": null
+  },
+  "currentProviders": [],
+  "providerCount": null,
+  "financialWorkflows": [],
+  "painPoints": [],
+  "integrationDifficulty": null,
+  "reconciliationDifficulty": null,
+  "providerFailureExperience": null,
+  "estimatedEngineeringCost": null,
+  "estimatedOperationalCost": null,
+  "currentWorkaround": null,
+  "willingnessToTest": null,
+  "willingnessToPilot": null,
+  "willingnessToPay": "UNKNOWN",
+  "proposedPrice": null,
+  "objections": [],
+  "followUpDate": null,
+  "status": "PROSPECT",
+  "evidence": [],
+  "painScore": null,
+  "qualification": {
+    "problemExistsToday": null,
+    "measurableCost": null,
+    "willingToTest": null,
+    "providesTechnicalFeedback": null,
+    "realisticPathToPayment": null
+  }
+}
+
