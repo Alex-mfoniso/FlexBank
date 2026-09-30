@@ -51,7 +51,22 @@ router.get(
   controller.syncStatus,
 );
 
+router.post(
+  "/transfers/:transferId/verify",
+  authenticateUserOrApiKey,
+  resolveProjectContext,
+  controller.syncStatus,
+);
+
 // 2. Public webhooks endpoint (unauthenticated, signature checked internally)
+router.post(
+  "/webhooks/paystack",
+  (req, res, next) => {
+    (req.params as any).provider = "paystack";
+    controller.handleWebhook(req, res, next);
+  },
+);
+
 router.post(
   "/webhooks/:provider",
   controller.handleWebhook,

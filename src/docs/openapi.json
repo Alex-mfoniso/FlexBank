@@ -846,6 +846,93 @@
         }
       }
     },
+    "/accounts/resolve": {
+      "get": {
+        "summary": "Resolve bank account",
+        "description": "Resolves official account holder name and validates bank account details through the configured financial provider capability.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bank_code",
+            "in": "query",
+            "required": true,
+            "description": "3-to-6 digit bank code (e.g. '058' for GTBank, '001' for test mode)",
+            "schema": {
+              "type": "string",
+              "example": "058"
+            }
+          },
+          {
+            "name": "account_number",
+            "in": "query",
+            "required": true,
+            "description": "10-digit NUBAN bank account number",
+            "schema": {
+              "type": "string",
+              "example": "0123456789"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account resolved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "account_number": {
+                          "type": "string",
+                          "example": "0123456789"
+                        },
+                        "account_name": {
+                          "type": "string",
+                          "example": "CHUKWUDI EZE"
+                        },
+                        "bank_code": {
+                          "type": "string",
+                          "example": "058"
+                        },
+                        "provider": {
+                          "type": "string",
+                          "example": "paystack"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "req_80e77232-54a4-483a-9098-9845c51d1317"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "429": {
+            "description": "Provider rate limit exceeded"
+          },
+          "503": {
+            "description": "Financial provider temporarily unavailable"
+          },
+          "504": {
+            "description": "Financial provider request timed out"
+          }
+        }
+      }
+    },
     "/accounts/{id}": {
       "get": {
         "summary": "Retrieve account details",
@@ -994,6 +1081,294 @@
           },
           "409": {
             "description": "Idempotency conflict or reference already exists"
+          }
+        }
+      }
+    },
+    "/transfers": {
+      "post": {
+        "summary": "Initiate developer outbound transfer",
+        "description": "Initiates an outbound bank transfer to a recipient financial account using the configured financial provider capability. Amounts are specified in minor units (kobo for NGN). Supports developer-scoped idempotency via the Idempotency-Key header.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Unique key to enforce idempotent execution across requests",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount", "currency", "bank_code", "account_number"],
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "description": "Amount in integer minor currency units (e.g. 500000 = 5,000 NGN)"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": ["NGN"],
+                    "description": "ISO 4217 currency code"
+                  },
+                  "bank_code": {
+                    "type": "string",
+                    "pattern": "^[0-9]{3,6}$",
+                    "description": "3-6 digit bank code (e.g. '058' for GTBank)"
+                  },
+                  "account_number": {
+                    "type": "string",
+                    "pattern": "^[0-9]{10}$",
+                    "description": "10-digit NUBAN destination account number"
+                  },
+                  "account_name": {
+                    "type": "string",
+                    "description": "Optional verified recipient account name"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Optional transfer description or narrative"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "description": "Optional developer-supplied tracking reference"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transfer initiated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "example": "txn_ric_9b2e04f1234567890123456789abcdef" },
+                        "reference": { "type": "string", "example": "ref_order_123" },
+                        "amount": { "type": "integer", "example": 500000 },
+                        "currency": { "type": "string", "example": "NGN" },
+                        "status": { "type": "string", "enum": ["pending", "processing", "successful", "failed", "reversed"], "example": "processing" },
+                        "bank_code": { "type": "string", "example": "058" },
+                        "account_number": { "type": "string", "example": "0123456789" },
+                        "account_name": { "type": "string", "example": "ALEXANDER TEST" },
+                        "reason": { "type": "string", "example": "Supplier payout" },
+                        "provider": { "type": "string", "example": "paystack" },
+                        "provider_reference": { "type": "string", "example": "TRF_9981a2f" },
+                        "created_at": { "type": "string", "format": "date-time" },
+                        "updated_at": { "type": "string", "format": "date-time" }
+                      }
+                    },
+                    "requestId": { "type": "string", "example": "req_12345" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or transfer rejected by provider"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "429": {
+            "description": "Provider rate limit exceeded"
+          },
+          "503": {
+            "description": "Provider temporarily unavailable"
+          },
+          "504": {
+            "description": "Provider request timed out (transfer tracked in processing state)"
+          }
+        }
+      }
+    },
+    "/transfers/{id}": {
+      "get": {
+        "summary": "Retrieve outbound transfer by ID",
+        "description": "Retrieves the normalized details and current lifecycle status of an outbound transfer.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Ricarut transfer identifier (txn_ric_...)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "reference": { "type": "string" },
+                        "amount": { "type": "integer" },
+                        "currency": { "type": "string" },
+                        "status": { "type": "string" },
+                        "bank_code": { "type": "string" },
+                        "account_number": { "type": "string" },
+                        "created_at": { "type": "string" },
+                        "updated_at": { "type": "string" }
+                      }
+                    },
+                    "requestId": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Transfer not found"
+          }
+        }
+      }
+    },
+    "/transfers/{transferId}/verify": {
+      "post": {
+        "summary": "Synchronize and verify transfer status with provider",
+        "description": "Queries the upstream provider capability to verify and reconcile the transfer status. Protects terminal states and applies state machine transitions.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "transferId",
+            "in": "path",
+            "required": true,
+            "description": "Ricarut transfer ID or developer reference",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer verified and status synchronized successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "example": "txn_ric_9b2e04f1234567890123456789abcdef" },
+                        "reference": { "type": "string", "example": "payout_order_1001" },
+                        "amount": { "type": "integer", "example": 500000 },
+                        "currency": { "type": "string", "example": "NGN" },
+                        "status": { "type": "string", "enum": ["pending", "processing", "successful", "failed", "reversed"], "example": "successful" },
+                        "bank_code": { "type": "string", "example": "058" },
+                        "account_number": { "type": "string", "example": "0123456789" },
+                        "provider": { "type": "string", "example": "paystack" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Transfer not found"
+          }
+        }
+      }
+    },
+    "/webhooks/{provider}": {
+      "post": {
+        "summary": "Ingest provider webhook event",
+        "description": "Public callback endpoint for external financial providers. Authenticates callers solely via HMAC-SHA512 cryptographic signature verification without requiring a developer API key. Deduplicates events idempotently and transitions transfer statuses safely.",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "description": "Provider identifier (e.g. 'paystack')",
+            "schema": {
+              "type": "string",
+              "enum": ["paystack"]
+            }
+          },
+          {
+            "name": "x-paystack-signature",
+            "in": "header",
+            "required": true,
+            "description": "HMAC-SHA512 signature of the raw request payload generated with the provider secret key",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "event": { "type": "string", "example": "transfer.success" },
+                  "data": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook event acknowledged and processed (or safely ignored/unmatched)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "success" },
+                    "result": { "type": "string", "enum": ["processed", "ignored", "unmatched", "transition_rejected"], "example": "processed" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid cryptographic webhook signature"
           }
         }
       }

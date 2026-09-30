@@ -17,6 +17,7 @@ router.use(authenticateUserOrApiKey, resolveProjectContext);
 
 router.post("/", controller.create);
 router.get("/", controller.list);
+router.get("/resolve", controller.resolve);
 router.get("/:id", controller.get);
 router.patch("/:id", controller.update);
 

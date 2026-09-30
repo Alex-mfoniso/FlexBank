@@ -1,6 +1,7 @@
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { redis } from "../lib/redis";
+import { providerService } from "../modules/providers/provider.service";
 
 const router = Router();
 
@@ -57,6 +58,43 @@ const readinessHandler = async (_req: Request, res: Response) => {
 
 router.get("/health/ready", readinessHandler);
 router.get("/ready", readinessHandler);
+
+// Provider connectivity diagnostic checks (e.g. GET /health/providers/paystack)
+router.get("/health/providers/:providerId", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const providerId = req.params.providerId.toLowerCase();
+    const result = await providerService.verifyProvider(providerId);
+
+    const statusCode = result.connected ? 200 : 503;
+    res.status(statusCode).json({
+      provider: result.provider,
+      connected: result.connected,
+      ...(result.error ? { error: result.error } : {}),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Overall financial providers diagnostic check
+router.get("/health/providers", async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const results = await providerService.verifyAllProviders();
+    const allConnected = results.every((r) => r.connected);
+
+    const statusCode = allConnected ? 200 : 503;
+    res.status(statusCode).json({
+      status: allConnected ? "ok" : "degraded",
+      providers: results.map((r) => ({
+        provider: r.provider,
+        connected: r.connected,
+        ...(r.error ? { error: r.error } : {}),
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 export const healthRoutes = router;
 export default healthRoutes;

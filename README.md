@@ -138,6 +138,110 @@ Runs actual ping queries to verify PostgreSQL and Redis connectivity before sign
 
 - **Degraded Response**: `503 Service Unavailable` if any core service is down.
 
+### 3. Provider Diagnostic Probe (`GET /health/providers/paystack` / `GET /api/v1/health/providers/paystack`)
+
+Verifies live connectivity to registered upstream financial providers (e.g. Paystack) using authenticated ping probes.
+
+- **Healthy Response**: `200 OK`
+
+```json
+{
+  "provider": "paystack",
+  "connected": true
+}
+```
+
+- **Diagnostic Failure**: `503 Service Unavailable` (no credentials leaked).
+
+---
+
+## Financial Capabilities
+
+### Bank Account Resolution (`GET /api/v1/accounts/resolve` / `GET /v1/accounts/resolve`)
+
+Resolves and validates official bank account ownership before creating transfer recipients or initiating payouts.
+
+- **Authentication**: `Authorization: Bearer <RICARUT_API_KEY>`
+- **Query Parameters**: `bank_code` (e.g. `058`), `account_number` (10-digit NUBAN)
+- **Response**:
+```json
+{
+  "data": {
+    "account_number": "0123456789",
+    "account_name": "CHUKWUDI EZE",
+    "bank_code": "058",
+    "provider": "paystack"
+  },
+  "requestId": "req_80e77232-54a4-483a-9098-9845c51d1317"
+}
+```
+For complete documentation, see [`docs/account-resolution.md`](docs/account-resolution.md).
+
+### Outbound Bank Transfers (`POST /v1/transfers` / `GET /v1/transfers/:id`)
+
+Initiates vendor-agnostic outbound payouts and bank disbursements to any verified NUBAN account. Amounts are integer minor units (kobo for NGN).
+
+- **Authentication**: `Authorization: Bearer <RICARUT_API_KEY>`
+- **Headers**: `Idempotency-Key: <unique-key>`
+- **Payload**:
+```json
+{
+  "amount": 500000,
+  "currency": "NGN",
+  "bank_code": "058",
+  "account_number": "0123456789",
+  "reason": "Supplier payout",
+  "reference": "payout_order_1001"
+}
+```
+- **Response**:
+```json
+{
+  "data": {
+    "id": "txn_ric_9b2e04f1234567890123456789abcdef",
+    "reference": "payout_order_1001",
+    "amount": 500000,
+    "currency": "NGN",
+    "status": "processing",
+    "bank_code": "058",
+    "account_number": "0123456789",
+    "account_name": "ALEXANDER TEST",
+    "provider": "paystack",
+    "created_at": "2026-09-30T10:45:00.000Z",
+    "updated_at": "2026-09-30T10:45:00.000Z"
+  },
+  "requestId": "req_df421190-71aa-4c22-b918-62be1194ac10"
+}
+```
+For complete documentation, see [`docs/transfers.md`](docs/transfers.md).
+
+---
+
+## Webhooks & Transfer Status Synchronization (Phase 5)
+
+Ricarut asynchronously synchronizes outbound transfer states via provider webhooks and fallback verification inquiries:
+
+```text
+Paystack Webhook → POST /v1/webhooks/paystack (HMAC-SHA512 Verified)
+                 → Idempotency Deduplication (WebhookEvent)
+                 → Transfer Lookup & State Machine Validation
+                 → Atomic Status Update (Transfer + ProviderTransaction)
+                 → Developer Queries Ricarut (GET /v1/transfers/:id)
+```
+
+### Supported Webhook Events
+- `transfer.success` $\rightarrow$ transitions transfer from `processing` to `successful`
+- `transfer.failed` $\rightarrow$ transitions transfer from `processing` to `failed`
+- `transfer.reversed` $\rightarrow$ transitions transfer to `reversed`
+
+### Developer Verification Fallback
+```bash
+POST /v1/transfers/:id/verify
+Authorization: Bearer rc_test_...
+```
+
+For complete details, signature verification guides, and local testing instructions, see [`docs/webhooks.md`](docs/webhooks.md).
+
 ---
 
 ## Architecture Design
@@ -157,3 +261,21 @@ ricarut-backend/
 ├── tests/                # Automated verification suites
 └── dist/                 # Compiled JavaScript output
 ```
+
+
+Set up this Neon project in the current working directory.
+
+1. `npm i -g neon@latest && neon login`
+2. `neon skills -y`
+3. `neon mcp -y`
+4. `neon link --project-id bitter-cell-00908003 --branch production -y`
+5. `neon config init`
+6. Update `neon.ts`:
+
+```ts
+import { defineConfig } from "@neon/config/v1";
+
+export default defineConfig({});
+```
+
+7. `neon deploy`

@@ -24,6 +24,7 @@ declare global {
         organizationId: string;
         environment: ProjectEnvironment;
       };
+      rawBody?: Buffer;
     }
   }
 }

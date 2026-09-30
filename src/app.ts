@@ -42,8 +42,15 @@ app.use(
   }),
 );
 
-// 2. Body Parser Middleware with secure limit constraints
-app.use(express.json({ limit: "1mb" }));
+// 2. Body Parser Middleware with secure limit constraints and raw body buffer preservation
+app.use(
+  express.json({
+    limit: "1mb",
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
 
 // 3. Tracing & Logging Pipeline
 app.use(requestIdMiddleware);
@@ -79,8 +86,9 @@ v1Router.get("/auth/test-key", authenticateApiKey, (req, res) => {
   return res.status(200).json({ status: "success", context: req.apiKeyContext });
 });
 
-// Register v1 prefix
+// Register v1 prefix and /v1 convenience alias
 app.use("/api/v1", v1Router);
+app.use("/v1", v1Router);
 
 // Register root paths for infrastructure/load balancer convenience
 app.use("/", healthRoutes);

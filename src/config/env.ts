@@ -14,6 +14,10 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters long"),
   APP_NAME: z.string().default("Ricarut"),
   APP_DESCRIPTION: z.string().default("Financial infrastructure for African developers"),
+  PAYSTACK_SECRET_KEY: z.string().optional(),
+  PAYSTACK_PUBLIC_KEY: z.string().optional(),
+  PAYSTACK_BASE_URL: z.string().url("PAYSTACK_BASE_URL must be a valid URL").default("https://api.paystack.co"),
+  DEFAULT_FINANCIAL_PROVIDER: z.string().default("paystack"),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

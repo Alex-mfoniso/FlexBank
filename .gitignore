@@ -38,6 +38,9 @@ coverage/
 .DS_Store
 Thumbs.db
 
+# Scratch and temporary testing
+scratch/
+
 flexwallet/
 
 

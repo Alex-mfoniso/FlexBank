@@ -1,11 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { AccountService } from "./account.service";
-import { createAccountSchema, updateAccountSchema } from "./account.schema";
+import { createAccountSchema, updateAccountSchema, resolveAccountQuerySchema } from "./account.schema";
+import { AccountResolutionService, accountResolutionService } from "./account-resolution.service";
 import { ValidationError } from "../../lib/errors";
 import { AccountStatus } from "@prisma/client";
 
 export class AccountController {
-  constructor(private readonly accountService: AccountService) {}
+  constructor(
+    private readonly accountService: AccountService,
+    private readonly resolutionService: AccountResolutionService = accountResolutionService,
+  ) {}
 
   create = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -72,6 +76,34 @@ export class AccountController {
       const account = await this.accountService.updateAccount(id, projectId, validation.data);
 
       return res.status(200).json({ account });
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * GET /api/v1/accounts/resolve?bank_code=...&account_number=...
+   * Resolves a bank account through the configured financial provider capability.
+   */
+  resolve = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validation = resolveAccountQuerySchema.safeParse(req.query);
+      if (!validation.success) {
+        return next(
+          new ValidationError(
+            "Invalid account resolution query parameters",
+            validation.error.format(),
+          ),
+        );
+      }
+
+      const { bank_code, account_number } = validation.data;
+      const data = await this.resolutionService.resolveAccount({
+        bankCode: bank_code,
+        accountNumber: account_number,
+      });
+
+      return res.status(200).json({ data });
     } catch (err) {
       return next(err);
     }
