@@ -30,14 +30,65 @@ const app = express();
 
 // 1. Core Security Middlewares
 app.use(helmet());
+
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://ricarut.vercel.app",
+  "https://flexbank-one.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+];
+
 app.use(
   cors({
-    origin: env.CORS_ORIGIN.includes(",")
-      ? env.CORS_ORIGIN.split(",").map((o) => o.trim())
-      : env.CORS_ORIGIN,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const configuredOrigins = env.CORS_ORIGIN
+        ? env.CORS_ORIGIN.split(",").map((o) => o.trim().toLowerCase())
+        : [];
+
+      const normalizedOrigin = origin.trim().toLowerCase();
+
+      if (
+        configuredOrigins.includes("*") ||
+        configuredOrigins.includes(normalizedOrigin) ||
+        DEFAULT_ALLOWED_ORIGINS.some((allowed) => allowed.toLowerCase() === normalizedOrigin)
+      ) {
+        return callback(null, true);
+      }
+
+      // Allow any Vercel deployment for Ricarut or Flexbank (preview branches, staging, production)
+      try {
+        const parsedUrl = new URL(origin);
+        if (
+          parsedUrl.hostname.endsWith(".vercel.app") &&
+          (parsedUrl.hostname.includes("ricarut") || parsedUrl.hostname.includes("flexbank"))
+        ) {
+          return callback(null, true);
+        }
+      } catch {
+        // Ignore invalid URL format
+      }
+
+      return callback(null, false);
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID", "X-Project-ID", "x-project-id"],
-    exposedHeaders: ["X-Request-ID", "x-request-id"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Request-ID",
+      "x-request-id",
+      "X-Project-ID",
+      "x-project-id",
+      "Idempotency-Key",
+      "idempotency-key",
+      "X-API-Key",
+      "x-api-key",
+    ],
+    exposedHeaders: ["X-Request-ID", "x-request-id", "Idempotency-Key", "idempotency-key"],
     credentials: true,
   }),
 );
