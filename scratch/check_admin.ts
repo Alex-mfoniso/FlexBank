@@ -9,42 +9,35 @@ async function main() {
     where: { role: "admin" }
   });
 
-  if (admins.length > 0) {
-    console.log("\n==================================================");
-    console.log("👑 FOUND ADMINISTRATOR ACCOUNTS IN DATABASE");
-    console.log("==================================================");
-    admins.forEach(a => {
-      console.log(`👉 Email : ${a.email}`);
-      console.log(`   Name  : ${a.firstName} ${a.lastName}`);
-      console.log(`   Status: ${a.status}`);
-      console.log(`   Role  : ${a.role}`);
-      console.log("--------------------------------------------------");
-    });
-    console.log("\n(Note: If you need to log in with a new account or reset credentials, you can modify this script.)");
-  } else {
-    console.log("\n==================================================");
-    console.log("⚙️ SEEDING DEFAULT ADMINISTRATOR ACCOUNT");
-    console.log("==================================================");
-    const email = "admin@ricarut.com";
-    const password = "RicarutAdmin2026!";
-    const passwordHash = await argon2.hash(password);
+  const email = "admin@ricarut.com";
+  const password = "RicarutAdmin2026!";
+  const passwordHash = await argon2.hash(password);
 
-    const newAdmin = await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        firstName: "System",
-        lastName: "Administrator",
-        role: "admin",
-        status: "active",
-      }
-    });
+  const updatedAdmin = await prisma.user.upsert({
+    where: { email },
+    update: {
+      passwordHash,
+      role: "admin",
+      status: "active",
+    },
+    create: {
+      email,
+      passwordHash,
+      firstName: "System",
+      lastName: "Administrator",
+      role: "admin",
+      status: "active",
+    },
+  });
 
-    console.log(`✅ Default administrator created successfully!`);
-    console.log(`👉 Email   : ${email}`);
-    console.log(`👉 Password: ${password}`);
-    console.log("==================================================\n");
-  }
+  console.log("\n==================================================");
+  console.log("👑 ADMINISTRATOR ACCOUNT SYNCHRONIZED & READY");
+  console.log("==================================================");
+  console.log(`👉 Email   : ${updatedAdmin.email}`);
+  console.log(`👉 Password: ${password}`);
+  console.log(`   Status  : ${updatedAdmin.status}`);
+  console.log(`   Role    : ${updatedAdmin.role}`);
+  console.log("==================================================\n");
 }
 
 main()

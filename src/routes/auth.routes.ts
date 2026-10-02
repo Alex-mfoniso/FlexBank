@@ -224,6 +224,7 @@ router.post("/login", authRateLimiter, async (req: Request, res: Response, next:
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
         status: user.status,
         createdAt: user.createdAt,
         memberships: user.memberships.map((m) => ({
@@ -292,6 +293,7 @@ router.get("/me", authenticateUser, async (req: Request, res: Response, next: Ne
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
         status: user.status,
         createdAt: user.createdAt,
         memberships: user.memberships.map((m) => ({

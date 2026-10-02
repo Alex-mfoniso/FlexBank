@@ -192,6 +192,15 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
                 </p>
               </div>
               <div className="py-1">
+                {(user?.role === "admin" || user?.email === "admin@ricarut.com") && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsUserDropdownOpen(false)}
+                    className="block px-3 py-1.5 text-left text-[10px] font-bold uppercase text-amber-400 hover:text-amber-300 transition-colors rounded"
+                  >
+                    👑 Admin Console
+                  </Link>
+                )}
                 <Link
                   to="/dashboard"
                   onClick={() => setIsUserDropdownOpen(false)}

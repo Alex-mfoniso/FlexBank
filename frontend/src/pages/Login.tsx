@@ -39,12 +39,19 @@ export const Login: React.FC = () => {
         id: user.id,
         email: user.email,
         name: `${user.firstName} ${user.lastName}`,
+        role: user.role,
         status: user.status,
         createdAt: user.createdAt,
         memberships: user.memberships,
       };
 
       login(token, formattedUser);
+
+      // Administrators go directly to the Admin Panel
+      if (user.role === "admin" || email.toLowerCase().trim() === "admin@ricarut.com") {
+        navigate("/admin");
+        return;
+      }
 
       // Programmatically check if they have any projects to route them correctly
       const fetchedProjects = response.data.projects || response.data.user?.projects || [];
