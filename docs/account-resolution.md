@@ -72,7 +72,8 @@ GET /v1/accounts/resolve
 
 | Header | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | **Yes** | Ricarut Bearer API key (`rc_test_...` or `rc_live_...`) or session JWT. |
+| `Authorization` | `string` | **Yes** | Ricarut Bearer API key (`Bearer rc_test_...` or `rc_live_...`) or session JWT. |
+| `X-API-Key` | `string` | Optional | Direct header alternative to Bearer authorization (`rc_test_...`). |
 | `Content-Type` | `string` | No | `application/json` |
 
 > **Security Note:** Never use upstream provider keys (e.g., Paystack secret keys) in requests to Ricarut. Authenticate strictly using your Ricarut developer API key.
@@ -93,7 +94,7 @@ GET /v1/accounts/resolve
 ### cURL
 
 ```bash
-curl -X GET "https://api.ricarut.com/api/v1/accounts/resolve?bank_code=058&account_number=0123456789" \
+curl -X GET "https://flexbank.onrender.com/v1/accounts/resolve?bank_code=058&account_number=0123456789" \
   -H "Authorization: Bearer rc_test_abc123def456.78901234567890123456789012345678"
 ```
 
@@ -101,7 +102,7 @@ curl -X GET "https://api.ricarut.com/api/v1/accounts/resolve?bank_code=058&accou
 
 ```typescript
 const response = await fetch(
-  "https://api.ricarut.com/api/v1/accounts/resolve?bank_code=058&account_number=0123456789",
+  "https://flexbank.onrender.com/v1/accounts/resolve?bank_code=058&account_number=0123456789",
   {
     headers: {
       "Authorization": `Bearer ${process.env.RICARUT_API_KEY}`,

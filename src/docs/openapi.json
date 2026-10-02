@@ -7,8 +7,16 @@
   },
   "servers": [
     {
-      "url": "http://localhost:4000/api/v1",
-      "description": "Local development server"
+      "url": "https://flexbank.onrender.com/v1",
+      "description": "Hosted Sandbox Environment (Canonical)"
+    },
+    {
+      "url": "https://flexbank.onrender.com/api/v1",
+      "description": "Hosted Sandbox Environment (Prefixed)"
+    },
+    {
+      "url": "http://localhost:3000/v1",
+      "description": "Local Development Server"
     }
   ],
   "paths": {

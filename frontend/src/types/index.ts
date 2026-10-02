@@ -58,6 +58,7 @@ export interface Account {
   id: string;
   projectId: string;
   customerId: string;
+  name?: string;
   currency: string;
   status: "active" | "frozen" | "closed";
   available: number;
@@ -78,6 +79,22 @@ export interface Beneficiary {
   createdAt: string;
 }
 
+export interface ResolvedAccount {
+  account_number: string;
+  account_name: string;
+  bank_code: string;
+}
+
+export interface DeveloperTransferPayload {
+  amount: number;
+  currency: "NGN";
+  bank_code: string;
+  account_number: string;
+  account_name?: string;
+  reference: string;
+  reason?: string;
+}
+
 export interface Transfer {
   id: string;
   projectId: string;
@@ -89,13 +106,26 @@ export interface Transfer {
   currency: string;
   reference: string;
   status: "pending" | "processing" | "successful" | "failed" | "reversed" | "cancelled";
-  direction: "internal" | "inbound" | "outbound";
-  type: "internal" | "external";
-  providerId: string | null;
-  failureCode: string | null;
-  failureMessage: string | null;
-  completedAt: string | null;
+  direction?: "internal" | "inbound" | "outbound";
+  type?: "internal" | "external";
+  providerId?: string | null;
+  failureCode?: string | null;
+  failureMessage?: string | null;
+  completedAt?: string | null;
   createdAt: string;
+  updatedAt?: string;
+  created_at?: string;
+  updated_at?: string;
+  bank_code?: string;
+  account_number?: string;
+  account_name?: string;
+  reason?: string;
+  environment?: string;
+  destination?: {
+    bank_code: string;
+    account_number: string;
+    account_name?: string;
+  };
   sourceAccount?: Account;
   destinationAccount?: Account;
   beneficiary?: Beneficiary;

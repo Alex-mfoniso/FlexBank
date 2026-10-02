@@ -217,8 +217,8 @@ export const ApiKeys: React.FC = () => {
             Secret API keys should be used from your backend/server. Do not put secret API keys directly in client browser builds, mobile application packages, public GitHub repositories, or Vite frontend source files.
           </p>
           <div className="pt-1.5 border-t border-neutral-900 flex flex-wrap gap-x-4 gap-y-2 text-[9px] font-bold text-neutral-600 uppercase">
-            <span>FLEXBANK_API_URL={FLEXBANK_API_URL}</span>
-            <span>FLEXBANK_API_KEY=fb_test_...</span>
+            <span>RICARUT_API_URL={FLEXBANK_API_URL}</span>
+            <span>RICARUT_API_KEY=rk_test_...</span>
           </div>
         </div>
 

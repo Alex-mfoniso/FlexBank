@@ -1,5 +1,5 @@
 import { api } from "../lib/api";
-import type { Account } from "../types";
+import type { Account, ResolvedAccount } from "../types";
 
 export const accountService = {
   async list(params?: { customerId?: string }): Promise<Account[]> {
@@ -29,5 +29,12 @@ export const accountService = {
   async getLedger(id: string): Promise<any[]> {
     const response = await api.get(`/api/v1/accounts/${id}/ledger`);
     return response.data.entries || response.data.data || [];
+  },
+
+  async resolve(bankCode: string, accountNumber: string): Promise<ResolvedAccount> {
+    const response = await api.get("/api/v1/accounts/resolve", {
+      params: { bank_code: bankCode, account_number: accountNumber },
+    });
+    return response.data.data;
   },
 };

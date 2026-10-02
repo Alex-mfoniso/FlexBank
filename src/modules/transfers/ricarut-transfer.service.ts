@@ -22,9 +22,16 @@ export interface NormalizedTransfer {
   bank_code: string;
   account_number: string;
   account_name?: string;
+  destination: {
+    bank_code: string;
+    account_number: string;
+    account_name?: string;
+  };
   reason?: string;
   provider: string;
+  environment: string;
   created_at: string;
+  updated_at: string;
 }
 
 /**
@@ -226,9 +233,16 @@ export class RicarutTransferService {
         bank_code: input.bankCode,
         account_number: input.accountNumber,
         account_name: input.accountName,
+        destination: {
+          bank_code: input.bankCode,
+          account_number: input.accountNumber,
+          account_name: input.accountName,
+        },
         reason: input.reason,
         provider: transferProvider.id,
+        environment: "test",
         created_at: updatedTransfer.createdAt.toISOString(),
+        updated_at: updatedTransfer.updatedAt.toISOString(),
       };
 
       // Mark idempotency completed with normalized response payload
@@ -304,9 +318,16 @@ export class RicarutTransferService {
       bank_code: metadata.bank_code || "",
       account_number: metadata.account_number || "",
       account_name: metadata.account_name,
+      destination: {
+        bank_code: metadata.bank_code || "",
+        account_number: metadata.account_number || "",
+        account_name: metadata.account_name,
+      },
       reason: metadata.reason,
-      provider: transfer.providerId || "unknown",
+      provider: transfer.providerId || "paystack",
+      environment: "test",
       created_at: transfer.createdAt.toISOString(),
+      updated_at: transfer.updatedAt.toISOString(),
     };
   }
 
@@ -337,9 +358,16 @@ export class RicarutTransferService {
         bank_code: metadata.bank_code || "",
         account_number: metadata.account_number || "",
         account_name: metadata.account_name,
+        destination: {
+          bank_code: metadata.bank_code || "",
+          account_number: metadata.account_number || "",
+          account_name: metadata.account_name,
+        },
         reason: metadata.reason,
-        provider: t.providerId || "unknown",
+        provider: t.providerId || "paystack",
+        environment: "test",
         created_at: t.createdAt.toISOString(),
+        updated_at: t.updatedAt.toISOString(),
       };
     });
   }

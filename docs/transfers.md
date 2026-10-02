@@ -84,6 +84,7 @@ Both canonical `/v1/...` and prefixed `/api/v1/...` paths are supported.
 | Header | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `Authorization` | `string` | **Yes** | Ricarut API Key (`Bearer rc_test_...` or `rc_live_...`) or JWT. |
+| `X-API-Key` | `string` | Optional | Direct header alternative to Bearer authorization (`rc_test_...`). |
 | `Idempotency-Key` | `string` | Recommended | Unique key to guarantee idempotency across network retries. Scoped per project. |
 | `Content-Type` | `string` | **Yes** | `application/json` |
 
@@ -133,14 +134,19 @@ POST /v1/transfers
     "amount": 500000,
     "currency": "NGN",
     "status": "processing",
+    "destination": {
+      "bank_code": "058",
+      "account_number": "0123456789",
+      "account_name": "ALEXANDER TEST"
+    },
     "bank_code": "058",
     "account_number": "0123456789",
     "account_name": "ALEXANDER TEST",
     "reason": "Supplier payout for invoice #8812",
     "provider": "paystack",
-    "provider_reference": "TRF_9981a2f102b34c56",
-    "created_at": "2026-09-30T10:45:00.000Z",
-    "updated_at": "2026-09-30T10:45:00.000Z"
+    "environment": "test",
+    "created_at": "2026-10-01T21:45:00.000Z",
+    "updated_at": "2026-10-01T21:45:00.000Z"
   },
   "requestId": "req_80e77232-54a4-483a-9098-9845c51d1317"
 }

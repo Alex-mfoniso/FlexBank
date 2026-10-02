@@ -106,7 +106,7 @@ export class TransferController {
   get = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const projectId = req.apiKeyContext!.projectId;
-      const transferId = req.params.transferId;
+      const transferId = req.params.id || req.params.transferId;
 
       // Check if it's a normalized developer transfer
       try {
@@ -142,7 +142,7 @@ export class TransferController {
   syncStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const projectId = req.apiKeyContext!.projectId;
-      const transferId = req.params.transferId;
+      const transferId = req.params.id || req.params.transferId;
 
       try {
         const result = await this.ricarutService.synchronizeTransferStatus(projectId, transferId);

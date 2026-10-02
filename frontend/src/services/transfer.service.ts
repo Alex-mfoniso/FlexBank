@@ -1,5 +1,5 @@
 import { api } from "../lib/api";
-import type { Transfer } from "../types";
+import type { Transfer, DeveloperTransferPayload } from "../types";
 
 export interface InitiateTransferPayload {
   type: "internal" | "external";
@@ -30,16 +30,29 @@ export const transferService = {
 
   async get(id: string): Promise<Transfer> {
     const response = await api.get(`/api/v1/transfers/${id}`);
+    return response.data.data || response.data.transfer;
+  },
+
+  async initiate(payload: InitiateTransferPayload, idempotencyKey?: string): Promise<Transfer> {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers["Idempotency-Key"] = idempotencyKey;
+    }
+    const response = await api.post("/api/v1/transfers", payload, { headers });
     return response.data.transfer || response.data.data;
   },
 
-  async initiate(payload: InitiateTransferPayload): Promise<Transfer> {
-    const response = await api.post("/api/v1/transfers", payload);
-    return response.data.transfer || response.data.data;
+  async initiateDeveloperTransfer(payload: DeveloperTransferPayload, idempotencyKey?: string): Promise<Transfer> {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers["Idempotency-Key"] = idempotencyKey;
+    }
+    const response = await api.post("/api/v1/transfers", payload, { headers });
+    return response.data.data || response.data.transfer;
   },
 
   async syncStatus(id: string): Promise<Transfer> {
     const response = await api.get(`/api/v1/transfers/${id}/status`);
-    return response.data.transfer || response.data.data;
+    return response.data.data || response.data.transfer;
   },
 };

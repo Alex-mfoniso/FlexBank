@@ -93,6 +93,14 @@ api.interceptors.response.use(
       errorPayload.message = "This operation is forbidden because the financial account is frozen or closed.";
     } else if (errorPayload.code === "TRANSFER_LIMIT_EXCEEDED") {
       errorPayload.message = "Transfer amount exceeds the established single-transaction or daily limit.";
+    } else if (errorPayload.code === "ACCOUNT_NOT_FOUND" || errorPayload.code === "INVALID_ACCOUNT") {
+      errorPayload.message = backendData?.error?.message || "Destination bank account could not be resolved. Please verify the account number and bank code.";
+    } else if (errorPayload.code === "PROVIDER_UNAVAILABLE") {
+      errorPayload.message = "The underlying payment rail is temporarily unavailable. Please try again shortly.";
+    } else if (errorPayload.code === "PROVIDER_TIMEOUT") {
+      errorPayload.message = "Request timed out while connecting to the payment network. Please verify status.";
+    } else if (errorPayload.code === "IDEMPOTENCY_KEY_REUSED") {
+      errorPayload.message = "This idempotency key was previously submitted with different transfer parameters.";
     }
 
     return Promise.reject(errorPayload);

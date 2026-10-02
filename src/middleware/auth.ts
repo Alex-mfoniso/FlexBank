@@ -88,12 +88,22 @@ const API_KEY_REGEX = /^(fb|rc)_(test|live)_([a-zA-Z0-9]{12})\.([a-zA-Z0-9]{32})
  * against the database's record using timing-safe buffer comparisons.
  */
 export const authenticateApiKey = async (req: Request, _res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  const apiKeyHeader = req.headers["x-api-key"] || req.headers["X-API-Key"];
+  let rawKey: string | undefined;
+
+  if (apiKeyHeader && typeof apiKeyHeader === "string") {
+    rawKey = apiKeyHeader.trim();
+  } else {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      rawKey = authHeader.split(" ")[1]?.trim();
+    }
+  }
+
+  if (!rawKey) {
     return next(new UnauthorizedError("Missing or malformed Authorization Bearer API key"));
   }
 
-  const rawKey = authHeader.split(" ")[1];
   const match = rawKey.match(API_KEY_REGEX);
 
   if (!match) {
@@ -227,6 +237,11 @@ export const requireOrgRole = (allowedRoles: OrgRole[]) => {
  * Dynamically forwards to the appropriate strategy.
  */
 export const authenticateUserOrApiKey = async (req: Request, res: Response, next: NextFunction) => {
+  const apiKeyHeader = req.headers["x-api-key"] || req.headers["X-API-Key"];
+  if (apiKeyHeader && typeof apiKeyHeader === "string") {
+    return authenticateApiKey(req, res, next);
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return next(new UnauthorizedError("Missing or malformed Authorization Bearer token"));
@@ -234,7 +249,7 @@ export const authenticateUserOrApiKey = async (req: Request, res: Response, next
 
   const token = authHeader.split(" ")[1];
 
-  if (token.startsWith("fb_test_") || token.startsWith("fb_live_") || token.startsWith("rc_test_") || token.startsWith("rc_live_")) {
+  if (token && (token.startsWith("fb_test_") || token.startsWith("fb_live_") || token.startsWith("rc_test_") || token.startsWith("rc_live_"))) {
     return authenticateApiKey(req, res, next);
   } else {
     return authenticateUser(req, res, next);
