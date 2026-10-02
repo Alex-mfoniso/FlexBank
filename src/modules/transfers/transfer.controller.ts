@@ -32,6 +32,10 @@ export class TransferController {
         "bankCode" in req.body ||
         "account_number" in req.body ||
         "accountNumber" in req.body ||
+        "phone_number" in req.body ||
+        "phoneNumber" in req.body ||
+        "destination" in req.body ||
+        req.body?.currency === "KES" ||
         (!("sourceAccountId" in req.body) && !("type" in req.body));
 
       if (isDeveloperTransfer) {
@@ -48,8 +52,11 @@ export class TransferController {
             requestId: req.id,
             projectId,
             action: "transfer.initiate_developer",
-            bankCode: data.bankCode,
-            maskedAccountNumber: maskAccountNumber(data.accountNumber),
+            provider: data.provider,
+            destinationType: data.destination?.type || (data.phoneNumber ? "mobile_money" : "bank_account"),
+            maskedTarget: data.phoneNumber
+              ? maskAccountNumber(data.phoneNumber)
+              : maskAccountNumber(data.accountNumber),
             amount: data.amount,
             currency: data.currency,
           },

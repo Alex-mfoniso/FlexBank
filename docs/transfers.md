@@ -1,16 +1,16 @@
-# Ricarut — Outbound Bank Transfers (Phase 4)
+# Ricarut — Outbound Transfers & Multi-Rail Payouts (Phases 4 & 7)
 
 ## Overview
 
-Ricarut provides unified, developer-first financial infrastructure across Africa. The **Outbound Bank Transfer** capability allows developers to initiate payouts and fund disbursements directly to bank accounts across supported financial institutions without managing vendor-specific concepts like recipient codes or provider tokens.
+Ricarut provides unified, developer-first financial infrastructure across Africa. The **Outbound Transfers** capability allows developers to initiate payouts and disbursements directly to both commercial bank accounts (Nigeria via Paystack) and mobile money wallets (Kenya via Safaricom M-Pesa B2C) through a single, consistent API.
 
-Ricarut completely abstracts upstream financial rails (e.g. Paystack). A developer simply provides a destination bank code and account number; Ricarut handles beneficiary resolution, recipient registration/caching, payout dispatch, and lifecycle tracking under a normalized domain model.
+Ricarut completely abstracts upstream financial rails. A developer simply specifies the destination (bank details or mobile phone number) and amount; Ricarut handles currency routing, beneficiary resolution, credential encryption, asynchronous dispatch, and lifecycle tracking under a normalized domain model.
 
 ---
 
 ## Architectural Flow
 
-```
+```text
    Developer Application
            │
            │ POST /v1/transfers
@@ -20,7 +20,7 @@ Ricarut completely abstracts upstream financial rails (e.g. Paystack). A develop
 ┌────────────────────────────────────────────────────────┐
 │                      Ricarut API                       │
 │  - Dual Auth: API Key (`rc_...`) or Session JWT        │
-│  - Request Parameter Validation (Zod Schema)           │
+│  - Multi-Rail Request Validation (Zod Schema)          │
 │  - Project-Scoped Idempotency Verification             │
 └──────────────────────────┬─────────────────────────────┘
                            │
@@ -29,39 +29,39 @@ Ricarut completely abstracts upstream financial rails (e.g. Paystack). A develop
 │               RicarutTransferService                   │
 │  - Decoupled Domain Service (Money Safety)             │
 │  - Generates Normalized Ricarut IDs (`txn_ric_...`)   │
-│  - Depends strictly on TransferProvider contract       │
+│  - Automatic Rail Routing (Paystack vs M-Pesa)        │
 └──────────────────────────┬─────────────────────────────┘
                            │
                            ▼
 ┌────────────────────────────────────────────────────────┐
 │               FinancialProvider Registry               │
-│  - Resolves active TransferProvider capability rail    │
-│  - Active Provider: Paystack (swappable rail)          │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-│                   PaystackAdapter                      │
-│  - Resolves destination account (AccountVerification)  │
-│  - Creates/Reuses internal recipient (`POST /recipient`)│
-│  - Dispatches transfer (`POST /transfer`)              │
-│  - Normalizes Paystack status to Ricarut lifecycle     │
-│  - NEVER leaks Paystack recipient codes to developer   │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-│                    PaystackClient                      │
-│  - Internal Bearer Auth, Connection Pooling            │
-│  - Sensitive Credential Redaction & Log Masking        │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-│                 Upstream Paystack API                  │
-│  - POST /transferrecipient                             │
-│  - POST /transfer                                      │
-└────────────────────────────────────────────────────────┘
+│  - Provider abstraction & capability management        │
+│  - Registered Providers: Paystack, Safaricom M-Pesa    │
+└──────────────┬──────────────────────────┬──────────────┘
+               │                          │
+       Currency: NGN              Currency: KES
+       Destination: Bank          Destination: Phone
+               │                          │
+               ▼                          ▼
+┌─────────────────────────────┐ ┌─────────────────────────────┐
+│       PaystackAdapter       │ │       MpesaB2CAdapter       │
+│  - Bank recipient management│ │  - Phone normalization      │
+│  - Paystack transfer dispatch│ │  - Daraja B2C payment       │
+│  - Lifecycle normalization  │ │  - Asynchronous callbacks   │
+└──────────────┬──────────────┘ └──────────────┬──────────────┘
+               │                               │
+               ▼                               ▼
+┌─────────────────────────────┐ ┌─────────────────────────────┐
+│       PaystackClient        │ │         MpesaClient         │
+│  - Bearer token security    │ │  - OAuth token cache (3600s)│
+│  - Connection pooling       │ │  - Daraja Sandbox endpoints │
+└──────────────┬──────────────┘ └──────────────┬──────────────┘
+               │                               │
+               ▼                               ▼
+┌─────────────────────────────┐ ┌─────────────────────────────┐
+│      Paystack TEST API      │ │    Safaricom Daraja API     │
+│       (Nigerian Banks)      │ │   (Kenyan M-Pesa Wallets)   │
+└─────────────────────────────┘ └─────────────────────────────┘
 ```
 
 ---

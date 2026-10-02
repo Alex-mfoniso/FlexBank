@@ -18,6 +18,18 @@ const envSchema = z.object({
   PAYSTACK_PUBLIC_KEY: z.string().optional(),
   PAYSTACK_BASE_URL: z.string().url("PAYSTACK_BASE_URL must be a valid URL").default("https://api.paystack.co"),
   DEFAULT_FINANCIAL_PROVIDER: z.string().default("paystack"),
+  // Financial Provider - Safaricom M-Pesa Configuration (Phase 7)
+  MPESA_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
+  MPESA_CONSUMER_KEY: z.string().optional(),
+  MPESA_CONSUMER_SECRET: z.string().optional(),
+  MPESA_INITIATOR_NAME: z.string().default("testapi"),
+  MPESA_INITIATOR_PASSWORD: z.string().optional(),
+  MPESA_SECURITY_CREDENTIAL: z.string().optional(),
+  MPESA_SHORTCODE: z.string().default("600988"),
+  MPESA_BASE_URL: z.string().url("MPESA_BASE_URL must be a valid URL").default("https://sandbox.safaricom.co.ke"),
+  MPESA_RESULT_URL: z.string().url("MPESA_RESULT_URL must be a valid URL").optional(),
+  MPESA_QUEUE_TIMEOUT_URL: z.string().url("MPESA_QUEUE_TIMEOUT_URL must be a valid URL").optional(),
+  MPESA_WEBHOOK_SECRET: z.string().optional(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

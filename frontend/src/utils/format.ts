@@ -14,7 +14,7 @@ export const formatMoney = (minorAmount: number | null | undefined, currency = "
 
   try {
     // Standard localized Intl Formatter
-    const locale = currency === "NGN" ? "en-NG" : "en-US";
+    const locale = currency === "NGN" ? "en-NG" : currency === "KES" ? "en-KE" : "en-US";
     const formatter = new Intl.NumberFormat(locale, {
       style: "currency",
       currency: currency,
@@ -34,7 +34,14 @@ export const formatMoney = (minorAmount: number | null | undefined, currency = "
     return formatted;
   } catch {
     // Resilient fallback formatting
-    const symbol = currency === "NGN" ? "₦" : currency === "USD" ? "$" : `${currency} `;
+    const symbol =
+      currency === "NGN"
+        ? "₦"
+        : currency === "KES"
+        ? "KSh "
+        : currency === "USD"
+        ? "$"
+        : `${currency} `;
     return `${symbol}${majorAmount.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,

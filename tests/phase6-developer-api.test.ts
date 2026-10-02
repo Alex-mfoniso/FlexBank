@@ -68,51 +68,48 @@ describe("Phase 6: Developer Financial Infrastructure & Public API Experience", 
     project: mockProjectA,
   };
 
-  let idempotencyStore: Map<string, any>;
-  let transferStore: Map<string, any>;
-
-  // Mock provider implementing AccountVerificationProvider and TransferProvider
-  const mockProvider: AccountVerificationProvider & TransferProvider = {
-    id: "paystack",
-    resolveAccount: vi.fn().mockImplementation(async ({ accountNumber, bankCode }) => {
-      if (bankCode === "058" && accountNumber === "0123456789") {
-        return {
-          accountNumber: "0123456789",
-          accountName: "PHASE6 TEST USER",
-          bankCode: "058",
-          provider: "paystack",
-        };
-      }
-      throw {
-        statusCode: 400,
-        providerCode: "account_not_found",
-        message: "Could not resolve account name",
-      };
-    }),
-    initiateTransfer: vi.fn().mockImplementation(async (params) => {
-      return {
-        id: `trf_mock_${Date.now()}`,
-        status: "processing",
-        providerReference: `prov_ref_${Date.now()}`,
-        fee: 1000,
-        initiatedAt: new Date().toISOString(),
-      };
-    }),
-    verifyTransfer: vi.fn().mockResolvedValue({
-      id: "trf_mock_1",
-      status: "successful",
-      amount: 500000,
-      currency: "NGN",
-      reference: "mock_ref",
-      updatedAt: new Date().toISOString(),
-    }),
-  };
+  const idempotencyStore = new Map<string, any>();
+  const transferStore = new Map<string, any>();
+  let mockProvider: AccountVerificationProvider & TransferProvider;
 
   beforeEach(() => {
     vi.restoreAllMocks();
 
-    idempotencyStore = new Map();
-    transferStore = new Map();
+    mockProvider = {
+      id: "paystack",
+      resolveAccount: vi.fn().mockImplementation(async ({ accountNumber, bankCode }) => {
+        if (bankCode === "058" && accountNumber === "0123456789") {
+          return {
+            accountNumber: "0123456789",
+            accountName: "PHASE6 TEST USER",
+            bankCode: "058",
+            provider: "paystack",
+          };
+        }
+        throw {
+          statusCode: 400,
+          providerCode: "account_not_found",
+          message: "Could not resolve account name",
+        };
+      }),
+      initiateTransfer: vi.fn().mockImplementation(async (params) => {
+        return {
+          id: `trf_mock_${Date.now()}`,
+          status: "processing",
+          providerReference: `prov_ref_${Date.now()}`,
+          fee: 1000,
+          initiatedAt: new Date().toISOString(),
+        };
+      }),
+      verifyTransfer: vi.fn().mockResolvedValue({
+        id: "trf_mock_1",
+        status: "successful",
+        amount: 500000,
+        currency: "NGN",
+        reference: "mock_ref",
+        updatedAt: new Date().toISOString(),
+      }),
+    };
 
     // Register mock provider into registry
     providerRegistry.register(mockProvider);
@@ -196,6 +193,10 @@ describe("Phase 6: Developer Financial Infrastructure & Public API Experience", 
       };
       transferStore.set(where.id, updated);
       return updated;
+    });
+
+    vi.spyOn(prisma.providerTransaction, "create").mockImplementation(async ({ data }: any) => {
+      return { id: `ptxn_${Date.now()}`, ...data } as any;
     });
   });
 

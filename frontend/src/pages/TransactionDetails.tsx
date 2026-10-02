@@ -174,12 +174,26 @@ export const TransactionDetails: React.FC = () => {
     );
   }
 
+  // Multi-rail detection
+  const isMpesa =
+    transfer.provider === "mpesa" ||
+    transfer.providerId === "mpesa" ||
+    transfer.currency === "KES" ||
+    !!transfer.phone_number ||
+    transfer.destination?.type === "mobile_money";
+
+  const destPhone =
+    transfer.phone_number ||
+    transfer.destination?.phone_number ||
+    "";
+
   // Destination variables resolution
   const destName =
     transfer.destination?.account_name ||
     transfer.account_name ||
+    transfer.recipient_name ||
     transfer.beneficiary?.name ||
-    (transfer.destinationAccount ? transfer.destinationAccount.name : "N/A");
+    (isMpesa ? "M-Pesa Recipient" : transfer.destinationAccount ? transfer.destinationAccount.name : "N/A");
 
   const destBankCode =
     transfer.destination?.bank_code ||
@@ -206,7 +220,9 @@ export const TransactionDetails: React.FC = () => {
     },
     {
       title: "Provider Network Processing",
-      desc: "Routing payment to Paystack TEST banking rail for external verification and settlement.",
+      desc: isMpesa
+        ? "Routing payment to Safaricom Daraja Sandbox B2C rail for mobile money disbursement."
+        : "Routing payment to Paystack TEST banking rail for external verification and settlement.",
       date: isNonTerminal || transfer.status === "successful" ? transfer.createdAt || transfer.created_at : null,
       status: transfer.status === "successful" ? "completed" : isNonTerminal ? "processing" : "pending",
     },
@@ -221,11 +237,11 @@ export const TransactionDetails: React.FC = () => {
           : "Settlement Pending",
       desc:
         transfer.status === "failed"
-          ? `Failure details: ${transfer.failureMessage || "Provider transfer was rejected or bank account was invalid."}`
+          ? `Failure details: ${transfer.failureMessage || (isMpesa ? "M-Pesa B2C payment was rejected by Daraja." : "Provider transfer was rejected or bank account was invalid.")}`
           : transfer.status === "reversed"
-          ? "Funds were returned and the transfer was reversed by the destination banking rail."
+          ? "Funds were returned and the transfer was reversed by the destination financial rail."
           : transfer.status === "successful"
-          ? "Beneficiary account credited successfully on the banking rail."
+          ? (isMpesa ? "Beneficiary mobile wallet credited successfully via Safaricom M-Pesa B2C." : "Beneficiary account credited successfully on the banking rail.")
           : "Awaiting final settlement webhook notification or status confirmation from payment rail.",
       date: transfer.completedAt || (transfer.status === "successful" || transfer.status === "failed" ? transfer.updatedAt || transfer.updated_at : null),
       status:
@@ -291,7 +307,11 @@ export const TransactionDetails: React.FC = () => {
       <div className="rounded border border-amber-950/40 bg-amber-950/10 px-4 py-3 text-[10px] text-amber-500 font-bold uppercase tracking-wider flex items-start space-x-2">
         <Info className="h-4.5 w-4.5 shrink-0 text-amber-400 mt-0.5" />
         <div>
-          <span>TEST MODE: Payment rail simulated with Paystack TEST credentials. No real currency is involved.</span>
+          <span>
+            TEST MODE: Payment rail simulated with{" "}
+            {isMpesa ? "Safaricom Daraja Sandbox (Kenyan M-Pesa B2C)" : "Paystack TEST (Nigerian Banks)"}{" "}
+            credentials. No real currency is involved.
+          </span>
         </div>
       </div>
 
@@ -391,32 +411,61 @@ export const TransactionDetails: React.FC = () => {
             </div>
 
             {/* Destination Beneficiary Card */}
-            <div className="rounded border border-neutral-900 bg-neutral-950 p-4 space-y-3 font-mono">
-              <span className="block text-[8px] font-bold text-neutral-500 uppercase tracking-widest flex items-center space-x-1.5">
-                <Building className="h-3.5 w-3.5 text-indigo-400" />
-                <span>Destination Banking Details</span>
-              </span>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div>
-                  <span className="block text-[8px] text-neutral-500 uppercase">Account Name</span>
-                  <p className="text-white font-bold mt-0.5 truncate uppercase">
-                    {destName}
-                  </p>
-                </div>
-                <div>
-                  <span className="block text-[8px] text-neutral-500 uppercase">Bank Code / Name</span>
-                  <p className="text-neutral-300 mt-0.5 font-bold">
-                    {destBankCode ? `${getBankName(destBankCode)} (${destBankCode})` : "N/A"}
-                  </p>
-                </div>
-                <div>
-                  <span className="block text-[8px] text-neutral-500 uppercase">Account Number</span>
-                  <p className="text-neutral-300 font-mono mt-0.5 select-all">
-                    {destAccountNumber || "N/A"}
-                  </p>
+            {isMpesa ? (
+              <div className="rounded border border-neutral-900 bg-neutral-950 p-4 space-y-3 font-mono">
+                <span className="block text-[8px] font-bold text-neutral-500 uppercase tracking-widest flex items-center space-x-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>Destination Mobile Money Details (Kenya - Safaricom M-Pesa)</span>
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  <div>
+                    <span className="block text-[8px] text-neutral-500 uppercase">Recipient Name</span>
+                    <p className="text-white font-bold mt-0.5 truncate uppercase">
+                      {destName || "M-Pesa Customer"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-neutral-500 uppercase">Provider Rail</span>
+                    <p className="text-emerald-400 mt-0.5 font-bold">
+                      Safaricom M-Pesa (Daraja B2C)
+                    </p>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-neutral-500 uppercase">Mobile Number</span>
+                    <p className="text-white font-mono mt-0.5 select-all font-bold">
+                      {destPhone || "N/A"}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="rounded border border-neutral-900 bg-neutral-950 p-4 space-y-3 font-mono">
+                <span className="block text-[8px] font-bold text-neutral-500 uppercase tracking-widest flex items-center space-x-1.5">
+                  <Building className="h-3.5 w-3.5 text-indigo-400" />
+                  <span>Destination Banking Details (Nigeria)</span>
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  <div>
+                    <span className="block text-[8px] text-neutral-500 uppercase">Account Name</span>
+                    <p className="text-white font-bold mt-0.5 truncate uppercase">
+                      {destName}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-neutral-500 uppercase">Bank Code / Name</span>
+                    <p className="text-neutral-300 mt-0.5 font-bold">
+                      {destBankCode ? `${getBankName(destBankCode)} (${destBankCode})` : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-neutral-500 uppercase">Account Number</span>
+                    <p className="text-neutral-300 font-mono mt-0.5 select-all">
+                      {destAccountNumber || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Failure Message Banner if failed */}
             {transfer.status === "failed" && (
@@ -502,7 +551,9 @@ export const TransactionDetails: React.FC = () => {
               <span className="block text-[8px] text-neutral-500 uppercase tracking-widest">
                 Provider Abstraction
               </span>
-              <p className="text-neutral-200 text-xs font-bold">Paystack TEST Rail</p>
+              <p className="text-neutral-200 text-xs font-bold">
+                {isMpesa ? "Safaricom M-Pesa B2C Rail (Sandbox)" : "Paystack TEST Rail"}
+              </p>
               <span className="text-[9.5px] text-neutral-500 block">
                 Normalized via Ricarut Provider Registry
               </span>

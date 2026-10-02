@@ -35,6 +35,32 @@ export class ProviderUnavailableError extends ProviderError {
 }
 
 /**
+ * Thrown when provider environment or configuration settings are invalid or missing.
+ */
+export class ProviderConfigurationError extends ProviderError {
+  constructor(
+    provider: string,
+    message: string = `Invalid configuration for provider '${provider}'`,
+    details?: Record<string, unknown>,
+  ) {
+    super(500, "PROVIDER_CONFIGURATION_ERROR", message, provider, undefined, details);
+  }
+}
+
+/**
+ * Thrown when a request does not pass provider-specific parameter constraints.
+ */
+export class ProviderValidationError extends ProviderError {
+  constructor(
+    provider: string,
+    message: string = `Validation error for provider '${provider}'`,
+    details?: Record<string, unknown>,
+  ) {
+    super(400, "PROVIDER_VALIDATION_ERROR", message, provider, undefined, details);
+  }
+}
+
+/**
  * Thrown when upstream provider authentication or credential verification fails.
  */
 export class ProviderAuthenticationError extends ProviderError {

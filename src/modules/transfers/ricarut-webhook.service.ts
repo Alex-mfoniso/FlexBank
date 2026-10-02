@@ -46,29 +46,22 @@ export class RicarutWebhookService {
       }
     }
 
-    // 2. Cryptographic Signature Verification
-    if (!signature || signature.trim() === "") {
-      logger.warn(
-        { provider: providerId },
-        "Rejected provider webhook request: missing signature header",
-      );
-      throw new UnauthorizedError("Missing webhook cryptographic signature");
-    }
-
+    // 2. Cryptographic Signature / Security Verification
     const rawString = Buffer.isBuffer(rawPayload)
       ? rawPayload.toString("utf8")
       : typeof rawPayload === "string"
       ? rawPayload
       : JSON.stringify(rawPayload);
 
-    // Call provider-specific signature verification
-    const isValidSignature = provider.verifyWebhookSignature(signature, rawPayload) ||
+    // Call provider-specific signature verification according to provider's security model
+    const isValidSignature =
+      provider.verifyWebhookSignature(signature, rawPayload) ||
       provider.verifyWebhookSignature(signature, rawString);
 
     if (!isValidSignature) {
       logger.warn(
         { provider: providerId },
-        "Rejected provider webhook request: invalid cryptographic signature",
+        "Rejected provider webhook request: invalid cryptographic signature or verification failed",
       );
       throw new UnauthorizedError("Invalid webhook cryptographic signature");
     }
@@ -225,6 +218,7 @@ export class RicarutWebhookService {
         }
       } else {
         // Direct developer transfer mutation
+        const currentMetadata = (transfer.metadata as any) || {};
         await prisma.transfer.update({
           where: { id: transfer.id },
           data: {
@@ -236,6 +230,12 @@ export class RicarutWebhookService {
             failureCode:
               targetStatus === "failed" ? failureReason || "TRANSFER_FAILED" : transfer.failureCode,
             failureMessage: targetStatus === "failed" ? failureReason : transfer.failureMessage,
+            metadata: {
+              ...currentMetadata,
+              providerReference: providerReference || transfer.providerReference,
+              eventId,
+              failureReason: targetStatus === "failed" ? failureReason : currentMetadata.failureReason,
+            },
           },
         });
       }

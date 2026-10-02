@@ -68,6 +68,23 @@ router.post(
 );
 
 router.post(
+  "/webhooks/mpesa/b2c",
+  (req, res, next) => {
+    (req.params as any).provider = "mpesa";
+    controller.handleWebhook(req, res, next);
+  },
+);
+
+router.post(
+  "/webhooks/mpesa/b2c/timeout",
+  (req, res, next) => {
+    (req.params as any).provider = "mpesa";
+    (req as any).isTimeout = true;
+    controller.handleWebhook(req, res, next);
+  },
+);
+
+router.post(
   "/webhooks/:provider",
   controller.handleWebhook,
 );

@@ -385,15 +385,15 @@ describe("Paystack Provider Integration (Phase 1)", () => {
       const response = await request(app).get("/health/providers");
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({
-        status: "ok",
-        providers: [
-          {
+      expect(response.body.status).toBe("ok");
+      expect(response.body.providers).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
             provider: "paystack",
             connected: true,
-          },
-        ],
-      });
+          }),
+        ])
+      );
     });
 
     it("GET /health/providers/invalid_provider should return 404 NOT_FOUND", async () => {

@@ -8,6 +8,7 @@ import {
 } from "./contracts/provider.contracts";
 import { ProviderUnavailableError } from "./provider.errors";
 import { PaystackAdapter } from "./paystack/paystack.adapter";
+import { MpesaB2CAdapter } from "./mpesa/mpesa.adapter";
 import { PaymentProvider } from "./provider.interface";
 import { FakePaymentProvider } from "./adapters/fake-provider/fake-provider.adapter";
 
@@ -23,6 +24,8 @@ export class ProviderRegistry {
   constructor() {
     // Automatically register default Paystack financial provider
     this.register(new PaystackAdapter());
+    // Automatically register Safaricom M-Pesa financial provider
+    this.register(new MpesaB2CAdapter());
     // Register legacy fake provider for existing transfer test harness compatibility
     this.register(new FakePaymentProvider());
   }
@@ -56,6 +59,14 @@ export class ProviderRegistry {
   }
 
   /**
+   * Alias for getAll() to discover registered providers.
+   */
+  listProviders(): AnyProvider[] {
+    return this.getAll();
+  }
+
+
+  /**
    * Returns all registered modern FinancialProviders.
    */
   getAllFinancialProviders(): FinancialProvider[] {
@@ -79,7 +90,7 @@ export class ProviderRegistry {
     const id = providerId || this.getDefaultProviderId();
     const provider = this.providers.get(id);
 
-    if (!provider || !("verifyConnectivity" in provider)) {
+    if (!provider) {
       throw new ProviderUnavailableError(
         id,
         `Financial provider '${id}' is not registered or unavailable`,

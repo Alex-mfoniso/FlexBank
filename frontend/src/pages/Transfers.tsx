@@ -51,10 +51,11 @@ export const Transfers: React.FC = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [step, setStep] = useState(1); // 1 = Form, 2 = Confirmation, 3 = Outcome
   const [transferType, setTransferType] = useState<"external" | "internal">("external");
+  const [selectedRail, setSelectedRail] = useState<"paystack" | "mpesa">("paystack");
   const [sourceAccountId, setSourceAccountId] = useState("");
   const [destinationAccountId, setDestinationAccountId] = useState("");
 
-  // External payout parameters
+  // External payout parameters (Paystack Nigerian Bank)
   const [bankCode, setBankCode] = useState("058"); // Default to GTBank for quick testing
   const [isCustomBank, setIsCustomBank] = useState(false);
   const [customBankCode, setCustomBankCode] = useState("");
@@ -63,6 +64,10 @@ export const Transfers: React.FC = () => {
   const [isResolvingAccount, setIsResolvingAccount] = useState(false);
   const [accountResolutionError, setAccountResolutionError] = useState<string | null>(null);
   const [accountResolved, setAccountResolved] = useState(false);
+
+  // M-Pesa Mobile Money parameters (Safaricom Daraja B2C)
+  const [mpesaPhoneNumber, setMpesaPhoneNumber] = useState("");
+  const [mpesaRecipientName, setMpesaRecipientName] = useState("");
 
   // Transfer values
   const [amountStr, setAmountStr] = useState("");
@@ -230,6 +235,7 @@ export const Transfers: React.FC = () => {
     setReference("");
     setReason("");
     setDestinationAccountId("");
+    setSelectedRail("paystack");
     setBankCode("058");
     setCustomBankCode("");
     setIsCustomBank(false);
@@ -237,6 +243,8 @@ export const Transfers: React.FC = () => {
     setBeneficiaryName("");
     setAccountResolved(false);
     setAccountResolutionError(null);
+    setMpesaPhoneNumber("");
+    setMpesaRecipientName("");
     setSubmitOutcome(null);
     setFormError(null);
   };
@@ -246,8 +254,9 @@ export const Transfers: React.FC = () => {
     setFormError(null);
 
     const val = parseFloat(amountStr);
+    const currencyLabel = selectedRail === "mpesa" ? "KES" : "NGN";
     if (isNaN(val) || val <= 0) {
-      setFormError("Please enter a valid positive transfer amount in NGN.");
+      setFormError(`Please enter a valid positive transfer amount in ${currencyLabel}.`);
       return;
     }
 
@@ -258,6 +267,12 @@ export const Transfers: React.FC = () => {
       }
       if (sourceAccountId === destinationAccountId) {
         setFormError("Source and destination accounts must be different.");
+        return;
+      }
+    } else if (selectedRail === "mpesa") {
+      const cleaned = mpesaPhoneNumber.replace(/\D/g, "");
+      if (!cleaned || cleaned.length < 9) {
+        setFormError("Please enter a valid Kenyan phone number (e.g. 0712345678 or 254712345678).");
         return;
       }
     } else {
@@ -285,26 +300,48 @@ export const Transfers: React.FC = () => {
     setStep(3);
 
     const majorAmount = parseFloat(amountStr);
-    const minorAmount = Math.round(majorAmount * 100); // Minor units (kobo)
+    const minorAmount = Math.round(majorAmount * 100); // Minor units
     const idempotencyKey = idempotencyKeyRef.current;
 
     try {
       let outcome: Transfer;
 
       if (transferType === "external") {
-        // Direct developer transfer backed by Paystack TEST mode
-        outcome = await transferService.initiateDeveloperTransfer(
-          {
-            amount: minorAmount,
-            currency: "NGN",
-            bank_code: activeBankCode.trim(),
-            account_number: accountNumber.trim(),
-            account_name: beneficiaryName.trim(),
-            reference: reference.trim() || `ref_trf_${Date.now().toString().slice(-6)}`,
-            reason: reason.trim() || undefined,
-          },
-          idempotencyKey
-        );
+        if (selectedRail === "mpesa") {
+          // Direct developer transfer backed by Safaricom M-Pesa B2C
+          outcome = await transferService.initiateDeveloperTransfer(
+            {
+              amount: minorAmount,
+              currency: "KES",
+              phone_number: mpesaPhoneNumber.trim(),
+              recipient_name: mpesaRecipientName.trim() || undefined,
+              destination: {
+                type: "mobile_money",
+                country: "KE",
+                provider: "mpesa",
+                phone_number: mpesaPhoneNumber.trim(),
+                account_name: mpesaRecipientName.trim() || undefined,
+              },
+              reference: reference.trim() || `ref_trf_${Date.now().toString().slice(-6)}`,
+              reason: reason.trim() || undefined,
+            },
+            idempotencyKey
+          );
+        } else {
+          // Direct developer transfer backed by Paystack TEST mode
+          outcome = await transferService.initiateDeveloperTransfer(
+            {
+              amount: minorAmount,
+              currency: "NGN",
+              bank_code: activeBankCode.trim(),
+              account_number: accountNumber.trim(),
+              account_name: beneficiaryName.trim(),
+              reference: reference.trim() || `ref_trf_${Date.now().toString().slice(-6)}`,
+              reason: reason.trim() || undefined,
+            },
+            idempotencyKey
+          );
+        }
       } else {
         // Internal ledger transfer
         outcome = await transferService.initiate(
@@ -333,10 +370,19 @@ export const Transfers: React.FC = () => {
 
   // Safe client-side search & filtering
   const filteredTransfers = transfers.filter((tx) => {
+    const isInternal = tx.type === "internal" || tx.direction === "internal";
+    const isMpesa =
+      tx.currency === "KES" ||
+      tx.provider === "mpesa" ||
+      tx.providerId === "mpesa" ||
+      !!tx.phone_number ||
+      tx.destination?.type === "mobile_money";
+
     if (typeFilter !== "all") {
-      const isInternal = tx.type === "internal" || tx.direction === "internal";
       if (typeFilter === "internal" && !isInternal) return false;
       if (typeFilter === "external" && isInternal) return false;
+      if (typeFilter === "mpesa" && (isInternal || !isMpesa)) return false;
+      if (typeFilter === "ngn" && (isInternal || isMpesa)) return false;
     }
 
     const term = searchQuery.toLowerCase().trim();
@@ -348,6 +394,7 @@ export const Transfers: React.FC = () => {
     const destName = (
       tx.destination?.account_name ||
       tx.account_name ||
+      tx.recipient_name ||
       tx.beneficiary?.name ||
       ""
     ).toLowerCase();
@@ -357,13 +404,19 @@ export const Transfers: React.FC = () => {
       tx.beneficiary?.accountNumber ||
       ""
     ).toLowerCase();
+    const destPhone = (
+      tx.phone_number ||
+      tx.destination?.phone_number ||
+      ""
+    ).toLowerCase();
 
     return (
       ref.includes(term) ||
       id.includes(term) ||
       status.includes(term) ||
       destName.includes(term) ||
-      destAcct.includes(term)
+      destAcct.includes(term) ||
+      destPhone.includes(term)
     );
   });
 
@@ -407,10 +460,10 @@ export const Transfers: React.FC = () => {
         <Info className="h-4.5 w-4.5 shrink-0 text-amber-400 mt-0.5" />
         <div className="space-y-0.5">
           <span className="block font-black text-amber-300">
-            SANDBOX ENVIRONMENT (Paystack TEST Rails)
+            MULTI-RAIL SANDBOX ENVIRONMENT (Paystack & Safaricom M-Pesa)
           </span>
           <span className="text-amber-400/80 font-medium normal-case block">
-            Transfers interact with banking rails under sandbox simulation credentials. No real currency is moved.
+            Transfers interact with Paystack TEST (Nigerian Banks) and Safaricom Daraja Sandbox (Kenyan M-Pesa B2C). No real currency is moved.
           </span>
         </div>
       </div>
@@ -441,8 +494,10 @@ export const Transfers: React.FC = () => {
             onChange={(e) => setTypeFilter(e.target.value)}
             className="rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs font-bold text-neutral-400 focus:border-indigo-500 focus:outline-none transition-all cursor-pointer"
           >
-            <option value="all">All Settlements</option>
-            <option value="external">External Bank Payouts</option>
+            <option value="all">All Rails & Settlements</option>
+            <option value="external">All External Payouts</option>
+            <option value="ngn">Nigerian Bank (Paystack)</option>
+            <option value="mpesa">Kenyan M-Pesa (Safaricom)</option>
             <option value="internal">Internal Wallets</option>
           </select>
         </div>
@@ -513,11 +568,19 @@ export const Transfers: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-neutral-900/40 text-[11px] font-semibold text-neutral-300">
                 {filteredTransfers.map((tx) => {
+                  const isMpesa =
+                    tx.currency === "KES" ||
+                    tx.provider === "mpesa" ||
+                    tx.providerId === "mpesa" ||
+                    !!tx.phone_number ||
+                    tx.destination?.type === "mobile_money";
                   const destName =
                     tx.destination?.account_name ||
                     tx.account_name ||
+                    tx.recipient_name ||
                     tx.beneficiary?.name ||
-                    (tx.destinationAccount ? tx.destinationAccount.name : "N/A");
+                    (isMpesa ? "M-Pesa Recipient" : tx.destinationAccount ? tx.destinationAccount.name : "N/A");
+                  const destPhone = tx.phone_number || tx.destination?.phone_number || "";
                   const destBank =
                     tx.destination?.bank_code ||
                     tx.bank_code ||
@@ -536,9 +599,20 @@ export const Transfers: React.FC = () => {
                       {/* Reference / ID */}
                       <td className="px-6 py-4">
                         <div>
-                          <span className="font-bold text-white block uppercase tracking-tight">
-                            {tx.reference}
-                          </span>
+                          <div className="flex items-center space-x-1.5">
+                            <span className="font-bold text-white block uppercase tracking-tight">
+                              {tx.reference}
+                            </span>
+                            {isMpesa ? (
+                              <span className="rounded bg-emerald-950/80 border border-emerald-800/60 px-1.5 py-0.2 text-[7.5px] font-black text-emerald-400 uppercase tracking-widest">
+                                M-PESA
+                              </span>
+                            ) : tx.type !== "internal" && tx.direction !== "internal" ? (
+                              <span className="rounded bg-indigo-950/80 border border-indigo-800/60 px-1.5 py-0.2 text-[7.5px] font-black text-indigo-400 uppercase tracking-widest">
+                                PAYSTACK
+                              </span>
+                            ) : null}
+                          </div>
                           <div className="flex items-center space-x-1.5 font-mono text-[9.5px] mt-1 text-neutral-500 select-all">
                             <span>{tx.id}</span>
                             <button
@@ -562,7 +636,11 @@ export const Transfers: React.FC = () => {
                           <span className="block font-bold text-white uppercase truncate max-w-[200px]">
                             {destName}
                           </span>
-                          {destBank && destAccount ? (
+                          {isMpesa ? (
+                            <span className="text-[9.5px] text-emerald-400 font-mono">
+                              Safaricom M-Pesa • {destPhone || "Kenyan MSISDN"}
+                            </span>
+                          ) : destBank && destAccount ? (
                             <span className="text-[9.5px] text-neutral-500">
                               {getBankName(destBank)} • {destAccount}
                             </span>
@@ -619,7 +697,7 @@ export const Transfers: React.FC = () => {
                             onClick={() => handleSyncStatus(tx.id)}
                             disabled={syncingId === tx.id}
                             className="inline-flex items-center space-x-1 text-[9px] font-bold text-amber-400 hover:text-amber-300 uppercase tracking-widest cursor-pointer mr-2"
-                            title="Sync status with Paystack TEST rail"
+                            title={isMpesa ? "Sync status with Safaricom Daraja rail" : "Sync status with Paystack TEST rail"}
                           >
                             <RefreshCw className={`h-3 w-3 ${syncingId === tx.id ? "animate-spin" : ""}`} />
                             <span>Sync</span>
@@ -643,11 +721,19 @@ export const Transfers: React.FC = () => {
           {/* Mobile / Card List View */}
           <div className="block lg:hidden space-y-3">
             {filteredTransfers.map((tx) => {
+              const isMpesa =
+                tx.currency === "KES" ||
+                tx.provider === "mpesa" ||
+                tx.providerId === "mpesa" ||
+                !!tx.phone_number ||
+                tx.destination?.type === "mobile_money";
               const destName =
                 tx.destination?.account_name ||
                 tx.account_name ||
+                tx.recipient_name ||
                 tx.beneficiary?.name ||
-                (tx.destinationAccount ? tx.destinationAccount.name : "N/A");
+                (isMpesa ? "M-Pesa Recipient" : tx.destinationAccount ? tx.destinationAccount.name : "N/A");
+              const destPhone = tx.phone_number || tx.destination?.phone_number || "";
               const destBank =
                 tx.destination?.bank_code || tx.bank_code || tx.beneficiary?.bankCode || "";
               const destAccount =
@@ -661,9 +747,16 @@ export const Transfers: React.FC = () => {
                 <div key={tx.id} className="rounded-lg border border-neutral-900 bg-neutral-950/40 p-4 space-y-3">
                   <div className="flex items-center justify-between border-b border-neutral-900 pb-2">
                     <div>
-                      <span className="font-bold text-white text-[11.5px] uppercase tracking-tight">
-                        {tx.reference}
-                      </span>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-bold text-white text-[11.5px] uppercase tracking-tight">
+                          {tx.reference}
+                        </span>
+                        {isMpesa ? (
+                          <span className="rounded bg-emerald-950/80 border border-emerald-800/60 px-1 py-0.2 text-[7px] font-black text-emerald-400 uppercase tracking-widest">
+                            M-PESA
+                          </span>
+                        ) : null}
+                      </div>
                       <p className="font-mono text-[9px] text-neutral-500 mt-0.5 select-all">{tx.id}</p>
                     </div>
                     <span
@@ -686,14 +779,21 @@ export const Transfers: React.FC = () => {
                         {destName}
                       </span>
                     </div>
-                    {destBank && destAccount && (
+                    {isMpesa ? (
+                      <div className="flex justify-between">
+                        <span className="text-neutral-600 uppercase">M-Pesa Mobile</span>
+                        <span className="text-emerald-400 font-mono text-right">
+                          {destPhone || "Kenyan MSISDN"}
+                        </span>
+                      </div>
+                    ) : destBank && destAccount ? (
                       <div className="flex justify-between">
                         <span className="text-neutral-600 uppercase">Bank / Acct</span>
                         <span className="text-neutral-400 text-right">
                           {getBankName(destBank)} ({destAccount})
                         </span>
                       </div>
-                    )}
+                    ) : null}
                     <div className="flex justify-between">
                       <span className="text-neutral-600 uppercase">Amount</span>
                       <span className="font-bold text-white">{formatMoney(tx.amount, tx.currency)}</span>
@@ -771,7 +871,7 @@ export const Transfers: React.FC = () => {
                 {/* Mode Selector */}
                 <div>
                   <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-widest">
-                    Settlement Rail Type
+                    Settlement Type
                   </label>
                   <div className="mt-1.5 grid grid-cols-2 gap-2">
                     <button
@@ -786,7 +886,7 @@ export const Transfers: React.FC = () => {
                           : "bg-neutral-950 text-neutral-600 border-neutral-900 hover:text-neutral-400"
                       }`}
                     >
-                      Nigerian Bank Payout
+                      External Payout
                     </button>
                     <button
                       type="button"
@@ -805,142 +905,226 @@ export const Transfers: React.FC = () => {
                   </div>
                 </div>
 
-                {/* External Bank Transfer Form (Phase 6.5 Core Flow) */}
+                {/* Sub-Rail selector for External Payouts */}
+                {transferType === "external" && (
+                  <div>
+                    <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-widest">
+                      Provider Rail
+                    </label>
+                    <div className="mt-1.5 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedRail("paystack");
+                          setFormError(null);
+                        }}
+                        className={`rounded py-2 text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
+                          selectedRail === "paystack"
+                            ? "bg-indigo-950/60 text-indigo-300 border-indigo-800"
+                            : "bg-neutral-950 text-neutral-600 border-neutral-900 hover:text-neutral-400"
+                        }`}
+                      >
+                        <Building className="h-3 w-3" />
+                        <span>Nigerian Bank (NGN)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedRail("mpesa");
+                          setFormError(null);
+                        }}
+                        className={`rounded py-2 text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
+                          selectedRail === "mpesa"
+                            ? "bg-emerald-950/60 text-emerald-300 border-emerald-800"
+                            : "bg-neutral-950 text-neutral-600 border-neutral-900 hover:text-neutral-400"
+                        }`}
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        <span>Kenyan M-Pesa (KES)</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* External Form */}
                 {transferType === "external" ? (
-                  <div className="space-y-4 rounded-lg border border-neutral-900 bg-neutral-950/60 p-4">
-                    <span className="block text-[8.5px] font-bold text-neutral-400 uppercase tracking-wider flex items-center space-x-1.5 pb-2 border-b border-neutral-900">
-                      <Building className="h-3.5 w-3.5 text-indigo-400" />
-                      <span>Destination Bank Details (Nigeria)</span>
-                    </span>
+                  selectedRail === "mpesa" ? (
+                    /* Safaricom M-Pesa B2C Rail Form */
+                    <div className="space-y-4 rounded-lg border border-neutral-900 bg-neutral-950/60 p-4">
+                      <span className="block text-[8.5px] font-bold text-neutral-400 uppercase tracking-wider flex items-center space-x-1.5 pb-2 border-b border-neutral-900">
+                        <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>Destination Mobile Money (Kenya - Safaricom M-Pesa)</span>
+                      </span>
 
-                    {/* Bank Selection */}
-                    <div>
-                      <div className="flex justify-between items-center">
+                      {/* Phone Number */}
+                      <div>
                         <label className="block text-[9px] font-bold text-neutral-400 uppercase">
-                          Bank Name / Code *
+                          Kenyan Mobile Number *
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsCustomBank(!isCustomBank);
-                            setAccountResolved(false);
-                            setBeneficiaryName("");
-                          }}
-                          className="text-[8.5px] font-bold text-indigo-400 hover:text-indigo-300 uppercase cursor-pointer"
-                        >
-                          {isCustomBank ? "Choose from list" : "Custom bank code"}
-                        </button>
-                      </div>
-
-                      {isCustomBank ? (
                         <input
                           type="text"
                           required
-                          value={customBankCode}
-                          onChange={(e) => {
-                            setCustomBankCode(e.target.value.replace(/\D/g, ""));
-                            setAccountResolved(false);
-                          }}
-                          placeholder="Enter 3-6 digit CBN code (e.g. 058)"
-                          className="mt-1 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-bold"
+                          value={mpesaPhoneNumber}
+                          onChange={(e) => setMpesaPhoneNumber(e.target.value)}
+                          placeholder="e.g. 0712345678 or 254712345678"
+                          className="mt-1 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs text-white placeholder:text-neutral-700 focus:border-emerald-500 focus:outline-none font-bold tracking-wider"
                         />
-                      ) : (
-                        <select
-                          value={bankCode}
-                          onChange={(e) => {
-                            setBankCode(e.target.value);
-                            setAccountResolved(false);
-                            setBeneficiaryName("");
-                            if (accountNumber.length === 10) {
-                              handleResolveAccount(e.target.value, accountNumber);
-                            }
-                          }}
-                          className="mt-1 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-semibold cursor-pointer"
-                        >
-                          {NIGERIAN_BANKS.map((bank) => (
-                            <option key={bank.code} value={bank.code}>
-                              {bank.name} ({bank.code})
-                            </option>
-                          ))}
-                        </select>
+                        <span className="text-[8.5px] text-neutral-600 mt-1 block">
+                          Accepts 07..., 01..., 2547..., or +254... (auto-normalized to 2547XXXXXXXX).
+                        </span>
+                      </div>
+
+                      {/* Recipient Name (Optional) */}
+                      <div>
+                        <label className="block text-[9px] font-bold text-neutral-400 uppercase">
+                          Recipient Name (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={mpesaRecipientName}
+                          onChange={(e) => setMpesaRecipientName(e.target.value)}
+                          placeholder="e.g. Jane Wanjiku"
+                          className="mt-1 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs text-white placeholder:text-neutral-700 focus:border-emerald-500 focus:outline-none font-medium"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* Nigerian Bank Transfer Form (Paystack) */
+                    <div className="space-y-4 rounded-lg border border-neutral-900 bg-neutral-950/60 p-4">
+                      <span className="block text-[8.5px] font-bold text-neutral-400 uppercase tracking-wider flex items-center space-x-1.5 pb-2 border-b border-neutral-900">
+                        <Building className="h-3.5 w-3.5 text-indigo-400" />
+                        <span>Destination Bank Details (Nigeria)</span>
+                      </span>
+
+                      {/* Bank Selection */}
+                      <div>
+                        <div className="flex justify-between items-center">
+                          <label className="block text-[9px] font-bold text-neutral-400 uppercase">
+                            Bank Name / Code *
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCustomBank(!isCustomBank);
+                              setAccountResolved(false);
+                              setBeneficiaryName("");
+                            }}
+                            className="text-[8.5px] font-bold text-indigo-400 hover:text-indigo-300 uppercase cursor-pointer"
+                          >
+                            {isCustomBank ? "Choose from list" : "Custom bank code"}
+                          </button>
+                        </div>
+
+                        {isCustomBank ? (
+                          <input
+                            type="text"
+                            required
+                            value={customBankCode}
+                            onChange={(e) => {
+                              setCustomBankCode(e.target.value.replace(/\D/g, ""));
+                              setAccountResolved(false);
+                            }}
+                            placeholder="Enter 3-6 digit CBN code (e.g. 058)"
+                            className="mt-1 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-bold"
+                          />
+                        ) : (
+                          <select
+                            value={bankCode}
+                            onChange={(e) => {
+                              setBankCode(e.target.value);
+                              setAccountResolved(false);
+                              setBeneficiaryName("");
+                              if (accountNumber.length === 10) {
+                                handleResolveAccount(e.target.value, accountNumber);
+                              }
+                            }}
+                            className="mt-1 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-semibold cursor-pointer"
+                          >
+                            {NIGERIAN_BANKS.map((bank) => (
+                              <option key={bank.code} value={bank.code}>
+                                {bank.name} ({bank.code})
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      {/* NUBAN Account Number */}
+                      <div>
+                        <label className="block text-[9px] font-bold text-neutral-400 uppercase">
+                          NUBAN Account Number (10 Digits) *
+                        </label>
+                        <div className="relative mt-1">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={10}
+                            required
+                            value={accountNumber}
+                            onChange={handleAccountNumberChange}
+                            placeholder="e.g. 0123456789"
+                            className="block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs text-white placeholder:text-neutral-700 focus:border-indigo-500 focus:outline-none font-bold tracking-wider"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleResolveAccount()}
+                            disabled={isResolvingAccount || accountNumber.length !== 10}
+                            className="absolute right-1.5 top-1.5 rounded bg-neutral-900 border border-neutral-800 px-2.5 py-1 text-[8.5px] font-bold uppercase tracking-wider text-neutral-300 hover:text-white disabled:opacity-40 transition-all cursor-pointer"
+                          >
+                            {isResolvingAccount ? (
+                              <Loader2 className="h-3 w-3 animate-spin text-indigo-400" />
+                            ) : (
+                              "Verify"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Account Resolution Status & Resolved Name */}
+                      {isResolvingAccount && (
+                        <div className="flex items-center space-x-2 text-[10px] text-neutral-400 py-1 font-semibold">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-400" />
+                          <span>Verifying account details with financial rail...</span>
+                        </div>
+                      )}
+
+                      {accountResolutionError && (
+                        <div className="rounded border border-red-950/80 bg-red-950/20 p-2.5 text-[10px] text-red-400 font-semibold flex items-start space-x-2">
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-red-400" />
+                          <span>{accountResolutionError}</span>
+                        </div>
+                      )}
+
+                      {accountResolved && beneficiaryName && (
+                        <div className="rounded border border-emerald-950/80 bg-emerald-950/20 p-2.5 space-y-1">
+                          <div className="flex items-center space-x-1.5 text-emerald-400 text-[10px] font-black uppercase tracking-wider">
+                            <CheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                            <span>Account Verified</span>
+                          </div>
+                          <p className="text-xs font-black text-white uppercase tracking-tight pl-5">
+                            {beneficiaryName}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Manual name override fallback if needed */}
+                      {!accountResolved && !isResolvingAccount && (
+                        <div>
+                          <label className="block text-[9px] font-bold text-neutral-500 uppercase">
+                            Beneficiary Legal Name {accountResolved ? "" : "*"}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={beneficiaryName}
+                            onChange={(e) => setBeneficiaryName(e.target.value)}
+                            placeholder="Auto-resolves on 10 digits or enter manually"
+                            className="mt-1 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                          />
+                        </div>
                       )}
                     </div>
-
-                    {/* NUBAN Account Number */}
-                    <div>
-                      <label className="block text-[9px] font-bold text-neutral-400 uppercase">
-                        NUBAN Account Number (10 Digits) *
-                      </label>
-                      <div className="relative mt-1">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={10}
-                          required
-                          value={accountNumber}
-                          onChange={handleAccountNumberChange}
-                          placeholder="e.g. 0123456789"
-                          className="block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-2 text-xs text-white placeholder:text-neutral-700 focus:border-indigo-500 focus:outline-none font-bold tracking-wider"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleResolveAccount()}
-                          disabled={isResolvingAccount || accountNumber.length !== 10}
-                          className="absolute right-1.5 top-1.5 rounded bg-neutral-900 border border-neutral-800 px-2.5 py-1 text-[8.5px] font-bold uppercase tracking-wider text-neutral-300 hover:text-white disabled:opacity-40 transition-all cursor-pointer"
-                        >
-                          {isResolvingAccount ? (
-                            <Loader2 className="h-3 w-3 animate-spin text-indigo-400" />
-                          ) : (
-                            "Verify"
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Account Resolution Status & Resolved Name */}
-                    {isResolvingAccount && (
-                      <div className="flex items-center space-x-2 text-[10px] text-neutral-400 py-1 font-semibold">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-400" />
-                        <span>Verifying account details with financial rail...</span>
-                      </div>
-                    )}
-
-                    {accountResolutionError && (
-                      <div className="rounded border border-red-950/80 bg-red-950/20 p-2.5 text-[10px] text-red-400 font-semibold flex items-start space-x-2">
-                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-red-400" />
-                        <span>{accountResolutionError}</span>
-                      </div>
-                    )}
-
-                    {accountResolved && beneficiaryName && (
-                      <div className="rounded border border-emerald-950/80 bg-emerald-950/20 p-2.5 space-y-1">
-                        <div className="flex items-center space-x-1.5 text-emerald-400 text-[10px] font-black uppercase tracking-wider">
-                          <CheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
-                          <span>Account Verified</span>
-                        </div>
-                        <p className="text-xs font-black text-white uppercase tracking-tight pl-5">
-                          {beneficiaryName}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Manual name override fallback if needed */}
-                    {!accountResolved && !isResolvingAccount && (
-                      <div>
-                        <label className="block text-[9px] font-bold text-neutral-500 uppercase">
-                          Beneficiary Legal Name {accountResolved ? "" : "*"}
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={beneficiaryName}
-                          onChange={(e) => setBeneficiaryName(e.target.value)}
-                          placeholder="Auto-resolves on 10 digits or enter manually"
-                          className="mt-1 block w-full rounded border border-neutral-900 bg-neutral-950 px-3 py-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
-                        />
-                      </div>
-                    )}
-                  </div>
+                  )
                 ) : (
                   /* Internal Wallet Transfer Form */
                   <div className="space-y-4 rounded-lg border border-neutral-900 bg-neutral-950/60 p-4">
@@ -986,21 +1170,25 @@ export const Transfers: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div>
                     <label className="block text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
-                      Amount (NGN) *
+                      Amount ({transferType === "external" && selectedRail === "mpesa" ? "KES" : "NGN"}) *
                     </label>
                     <div className="relative mt-1.5 rounded shadow-sm">
                       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                        <span className="text-neutral-500 text-xs font-black">₦</span>
+                        <span className="text-neutral-500 text-xs font-black">
+                          {transferType === "external" && selectedRail === "mpesa" ? "KSh" : "₦"}
+                        </span>
                       </div>
                       <input
                         type="number"
-                        step="0.01"
+                        step={transferType === "external" && selectedRail === "mpesa" ? "1" : "0.01"}
                         min="1"
                         required
                         value={amountStr}
                         onChange={(e) => setAmountStr(e.target.value)}
-                        placeholder="5000.00"
-                        className="block w-full rounded border border-neutral-900 bg-neutral-950 pl-8 pr-3 py-2 text-xs text-white placeholder:text-neutral-700 focus:border-indigo-500 focus:outline-none font-bold"
+                        placeholder={transferType === "external" && selectedRail === "mpesa" ? "100" : "5000.00"}
+                        className={`block w-full rounded border border-neutral-900 bg-neutral-950 ${
+                          transferType === "external" && selectedRail === "mpesa" ? "pl-11" : "pl-8"
+                        } pr-3 py-2 text-xs text-white placeholder:text-neutral-700 focus:border-indigo-500 focus:outline-none font-bold`}
                       />
                     </div>
                   </div>
@@ -1060,14 +1248,32 @@ export const Transfers: React.FC = () => {
                   <div className="rounded border border-indigo-950 bg-indigo-950/20 p-3.5 text-indigo-400 text-[10.5px] leading-relaxed flex items-start space-x-2">
                     <Info className="h-4.5 w-4.5 text-indigo-400 shrink-0 mt-0.5" />
                     <span>
-                      Review transfer parameters before execution. Ricarut will route this payment to Paystack TEST rails.
+                      Review transfer parameters before execution. Ricarut will route this payment to{" "}
+                      {transferType === "internal"
+                        ? "the internal ledger"
+                        : selectedRail === "mpesa"
+                        ? "Safaricom Daraja Sandbox (Kenyan M-Pesa B2C)"
+                        : "Paystack TEST rails (Nigerian Bank Transfer)"}
+                      .
                     </span>
                   </div>
 
                   <div className="rounded-lg border border-neutral-900 bg-neutral-950/60 p-4 space-y-4">
                     <div className="grid grid-cols-2 gap-x-2 gap-y-4">
                       {transferType === "external" ? (
-                        <>
+                        selectedRail === "mpesa" ? (
+                          <div className="col-span-2">
+                            <span className="block text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
+                              Destination Mobile Money (M-Pesa)
+                            </span>
+                            <p className="text-white font-black mt-1 text-sm uppercase">
+                              {mpesaRecipientName || "M-Pesa Customer"}
+                            </p>
+                            <span className="text-[10px] text-emerald-400 font-mono mt-0.5 block">
+                              Safaricom M-Pesa • {mpesaPhoneNumber}
+                            </span>
+                          </div>
+                        ) : (
                           <div className="col-span-2">
                             <span className="block text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
                               Destination Account
@@ -1079,7 +1285,7 @@ export const Transfers: React.FC = () => {
                               {getBankName(activeBankCode)} • {accountNumber}
                             </span>
                           </div>
-                        </>
+                        )
                       ) : (
                         <>
                           <div>
@@ -1104,7 +1310,10 @@ export const Transfers: React.FC = () => {
                           Amount
                         </span>
                         <p className="text-xl font-black text-white mt-1">
-                          ₦{parseFloat(amountStr).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                          {formatMoney(
+                            Math.round(parseFloat(amountStr) * 100),
+                            transferType === "external" && selectedRail === "mpesa" ? "KES" : "NGN"
+                          )}
                         </p>
                       </div>
 
@@ -1114,6 +1323,19 @@ export const Transfers: React.FC = () => {
                         </span>
                         <p className="text-neutral-300 font-mono text-[10px] mt-1 bg-neutral-950 p-2 rounded border border-neutral-900 select-all">
                           {reference}
+                        </p>
+                      </div>
+
+                      <div className="col-span-2">
+                        <span className="block text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
+                          Settlement Rail
+                        </span>
+                        <p className="text-neutral-300 text-[10px] mt-1 font-bold">
+                          {transferType === "internal"
+                            ? "Ricarut Internal Ledger"
+                            : selectedRail === "mpesa"
+                            ? "Safaricom M-Pesa B2C (Daraja Sandbox)"
+                            : "Paystack NUBAN Transfer Rail"}
                         </p>
                       </div>
 
@@ -1165,7 +1387,9 @@ export const Transfers: React.FC = () => {
                       Routing Transfer to Payment Rail...
                     </h3>
                     <p className="text-[10px] text-neutral-500 max-w-xs leading-normal">
-                      Initiating transfer with Paystack TEST mode provider adapter.
+                      Initiating transfer with{" "}
+                      {selectedRail === "mpesa" ? "Safaricom M-Pesa B2C Daraja" : "Paystack TEST"}{" "}
+                      provider adapter.
                     </p>
                   </div>
                 ) : submitOutcome ? (

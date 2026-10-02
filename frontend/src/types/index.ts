@@ -87,12 +87,24 @@ export interface ResolvedAccount {
 
 export interface DeveloperTransferPayload {
   amount: number;
-  currency: "NGN";
-  bank_code: string;
-  account_number: string;
-  account_name?: string;
+  currency: "NGN" | "KES";
   reference: string;
   reason?: string;
+  provider?: "paystack" | "mpesa";
+  bank_code?: string;
+  account_number?: string;
+  account_name?: string;
+  phone_number?: string;
+  recipient_name?: string;
+  destination?: {
+    type?: "bank_account" | "mobile_money";
+    country?: string;
+    provider?: string;
+    bank_code?: string;
+    account_number?: string;
+    account_name?: string;
+    phone_number?: string;
+  };
 }
 
 export interface Transfer {
@@ -109,6 +121,8 @@ export interface Transfer {
   direction?: "internal" | "inbound" | "outbound";
   type?: "internal" | "external";
   providerId?: string | null;
+  provider?: string | null;
+  rail?: string | null;
   failureCode?: string | null;
   failureMessage?: string | null;
   completedAt?: string | null;
@@ -119,12 +133,18 @@ export interface Transfer {
   bank_code?: string;
   account_number?: string;
   account_name?: string;
+  phone_number?: string;
+  recipient_name?: string;
   reason?: string;
   environment?: string;
   destination?: {
-    bank_code: string;
-    account_number: string;
+    type?: string;
+    country?: string;
+    provider?: string;
+    bank_code?: string;
+    account_number?: string;
     account_name?: string;
+    phone_number?: string;
   };
   sourceAccount?: Account;
   destinationAccount?: Account;

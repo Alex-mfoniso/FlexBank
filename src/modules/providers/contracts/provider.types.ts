@@ -155,9 +155,21 @@ export interface InitiateTransferParams {
   bankCode?: string;
   accountNumber?: string;
   accountName?: string;
+  phoneNumber?: string;
+  destinationType?: "bank_account" | "mobile_money";
+  destination?: {
+    type?: string;
+    country?: string;
+    provider?: string;
+    bank_code?: string;
+    account_number?: string;
+    account_name?: string;
+    phone_number?: string;
+  };
   reason?: string;
   currency?: string;
   source?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface VerifyTransferParams {

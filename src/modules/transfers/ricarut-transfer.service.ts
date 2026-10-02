@@ -19,13 +19,19 @@ export interface NormalizedTransfer {
   amount: number;
   currency: string;
   status: ProviderTransferStatus;
-  bank_code: string;
-  account_number: string;
+  bank_code?: string;
+  account_number?: string;
   account_name?: string;
+  phone_number?: string;
+  recipient_name?: string;
   destination: {
-    bank_code: string;
-    account_number: string;
+    type?: "bank_account" | "mobile_money";
+    country?: string;
+    provider?: string;
+    bank_code?: string;
+    account_number?: string;
     account_name?: string;
+    phone_number?: string;
   };
   reason?: string;
   provider: string;
@@ -118,8 +124,16 @@ export class RicarutTransferService {
       );
     }
 
-    // 4. Resolve Transfer Provider capability via Registry (pure abstraction)
-    const transferProvider = this.registry.resolveTransfer(providerId);
+    // 4. Resolve Transfer Provider capability via Registry (pure multi-rail abstraction)
+    const resolvedProviderId =
+      providerId ||
+      input.provider ||
+      (input.currency === "KES" || input.phoneNumber || input.destination?.type === "mobile_money"
+        ? "mpesa"
+        : "paystack");
+
+    const transferProvider = this.registry.resolveTransfer(resolvedProviderId);
+    const isMpesa = transferProvider.id === "mpesa";
 
     // 5. Register or update idempotency record to pending
     const expiresAt = new Date(Date.now() + 86400 * 1000); // 24 hours
@@ -147,6 +161,28 @@ export class RicarutTransferService {
     // 6. Generate Ricarut Transfer ID
     const transferId = `txn_ric_${crypto.randomUUID().replace(/-/g, "")}`;
 
+    // Metadata preparation according to destination rail
+    const initialMetadata: any = isMpesa
+      ? {
+          rail: "mpesa",
+          currency: input.currency,
+          country: "KE",
+          phone_number: input.phoneNumber,
+          recipient_name: input.recipientName || input.accountName,
+          reason: input.reason,
+          destination: input.destination,
+        }
+      : {
+          rail: "paystack",
+          currency: input.currency,
+          country: "NG",
+          bank_code: input.bankCode,
+          account_number: input.accountNumber,
+          account_name: input.accountName,
+          reason: input.reason,
+          destination: input.destination,
+        };
+
     // 7. Persist initial Transfer record in PostgreSQL with pending status
     const transfer = await prisma.transfer.create({
       data: {
@@ -159,12 +195,7 @@ export class RicarutTransferService {
         direction: "outbound",
         type: "external",
         providerId: transferProvider.id,
-        metadata: {
-          bank_code: input.bankCode,
-          account_number: input.accountNumber,
-          account_name: input.accountName,
-          reason: input.reason,
-        },
+        metadata: initialMetadata,
       },
     });
 
@@ -173,8 +204,11 @@ export class RicarutTransferService {
         transferId: transfer.id,
         reference: input.reference,
         provider: transferProvider.id,
-        bankCode: input.bankCode,
-        accountNumber: this.maskAccountNumber(input.accountNumber),
+        rail: isMpesa ? "mpesa" : "paystack",
+        destinationType: input.destination?.type || (isMpesa ? "mobile_money" : "bank_account"),
+        maskedTarget: isMpesa
+          ? this.maskAccountNumber(input.phoneNumber || "")
+          : this.maskAccountNumber(input.accountNumber || ""),
         amount: input.amount,
         currency: input.currency,
       },
@@ -190,6 +224,8 @@ export class RicarutTransferService {
         bankCode: input.bankCode,
         accountNumber: input.accountNumber,
         accountName: input.accountName,
+        phoneNumber: input.phoneNumber,
+        destination: input.destination,
         reason: input.reason,
       });
 
@@ -201,10 +237,8 @@ export class RicarutTransferService {
           providerReference: providerTransfer.providerReference || null,
           completedAt: providerTransfer.status === "successful" ? new Date() : null,
           metadata: {
-            bank_code: input.bankCode,
-            account_number: input.accountNumber,
-            account_name: input.accountName,
-            reason: input.reason,
+            ...initialMetadata,
+            providerReference: providerTransfer.providerReference,
             fee: providerTransfer.fee,
           },
         },
@@ -233,11 +267,18 @@ export class RicarutTransferService {
         bank_code: input.bankCode,
         account_number: input.accountNumber,
         account_name: input.accountName,
-        destination: {
+        phone_number: input.phoneNumber,
+        recipient_name: input.recipientName || input.accountName,
+        destination: input.destination || (isMpesa ? {
+          type: "mobile_money",
+          country: "KE",
+          provider: "mpesa",
+          phone_number: input.phoneNumber,
+        } : {
           bank_code: input.bankCode,
           account_number: input.accountNumber,
           account_name: input.accountName,
-        },
+        }),
         reason: input.reason,
         provider: transferProvider.id,
         environment: "test",
@@ -308,6 +349,29 @@ export class RicarutTransferService {
     }
 
     const metadata = (transfer.metadata as any) || {};
+    const isMpesa =
+      transfer.providerId === "mpesa" ||
+      metadata.rail === "mpesa" ||
+      transfer.currency === "KES";
+
+    const destination =
+      metadata.destination ||
+      (isMpesa
+        ? {
+            type: "mobile_money",
+            country: "KE",
+            provider: "mpesa",
+            phone_number: metadata.phone_number,
+            account_name: metadata.recipient_name || metadata.account_name,
+          }
+        : {
+            type: "bank_account",
+            country: "NG",
+            provider: "paystack",
+            bank_code: metadata.bank_code || "",
+            account_number: metadata.account_number || "",
+            account_name: metadata.account_name,
+          });
 
     return {
       id: transfer.id,
@@ -315,16 +379,14 @@ export class RicarutTransferService {
       amount: transfer.amount,
       currency: transfer.currency,
       status: transfer.status as ProviderTransferStatus,
-      bank_code: metadata.bank_code || "",
-      account_number: metadata.account_number || "",
+      bank_code: metadata.bank_code,
+      account_number: metadata.account_number,
       account_name: metadata.account_name,
-      destination: {
-        bank_code: metadata.bank_code || "",
-        account_number: metadata.account_number || "",
-        account_name: metadata.account_name,
-      },
+      phone_number: metadata.phone_number,
+      recipient_name: metadata.recipient_name || metadata.account_name,
+      destination,
       reason: metadata.reason,
-      provider: transfer.providerId || "paystack",
+      provider: transfer.providerId || (isMpesa ? "mpesa" : "paystack"),
       environment: "test",
       created_at: transfer.createdAt.toISOString(),
       updated_at: transfer.updatedAt.toISOString(),
@@ -349,22 +411,44 @@ export class RicarutTransferService {
 
     return transfers.map((t) => {
       const metadata = (t.metadata as any) || {};
+      const isMpesa =
+        t.providerId === "mpesa" ||
+        metadata.rail === "mpesa" ||
+        t.currency === "KES";
+
+      const destination =
+        metadata.destination ||
+        (isMpesa
+          ? {
+              type: "mobile_money",
+              country: "KE",
+              provider: "mpesa",
+              phone_number: metadata.phone_number,
+              account_name: metadata.recipient_name || metadata.account_name,
+            }
+          : {
+              type: "bank_account",
+              country: "NG",
+              provider: "paystack",
+              bank_code: metadata.bank_code || "",
+              account_number: metadata.account_number || "",
+              account_name: metadata.account_name,
+            });
+
       return {
         id: t.id,
         reference: t.reference,
         amount: t.amount,
         currency: t.currency,
         status: t.status as ProviderTransferStatus,
-        bank_code: metadata.bank_code || "",
-        account_number: metadata.account_number || "",
+        bank_code: metadata.bank_code,
+        account_number: metadata.account_number,
         account_name: metadata.account_name,
-        destination: {
-          bank_code: metadata.bank_code || "",
-          account_number: metadata.account_number || "",
-          account_name: metadata.account_name,
-        },
+        phone_number: metadata.phone_number,
+        recipient_name: metadata.recipient_name || metadata.account_name,
+        destination,
         reason: metadata.reason,
-        provider: t.providerId || "paystack",
+        provider: t.providerId || (isMpesa ? "mpesa" : "paystack"),
         environment: "test",
         created_at: t.createdAt.toISOString(),
         updated_at: t.updatedAt.toISOString(),
