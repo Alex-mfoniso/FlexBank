@@ -3,9 +3,14 @@
  */
 export type ProviderCapability =
   | "account_verification"
+  | "bank_account_resolution"
   | "recipient_management"
   | "transfers"
+  | "bank_transfer"
+  | "mobile_money_transfer"
+  | "transaction_status"
   | "webhooks"
+  | "webhook_status"
   | "connectivity";
 
 /**
@@ -175,4 +180,5 @@ export interface InitiateTransferParams {
 export interface VerifyTransferParams {
   providerReference?: string;
   reference?: string;
+  transferReference?: string;
 }

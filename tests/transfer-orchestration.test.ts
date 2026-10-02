@@ -18,10 +18,18 @@ vi.mock("../src/lib/redis", () => ({
   redis: mockRedis,
 }));
 
-vi.mock("../src/middleware/rate-limiter", () => ({
-  rateLimiterMiddleware: () => (req: any, res: any, next: any) => next(),
-  default: () => (req: any, res: any, next: any) => next(),
-}));
+vi.mock("../src/middleware/rate-limiter", () => {
+  const noop = (_req: any, _res: any, next: any) => next();
+  return {
+    rateLimiterMiddleware: () => noop,
+    createTransferRateLimiter: noop,
+    getTransferRateLimiter: noop,
+    resolveAccountRateLimiter: noop,
+    authRateLimiter: noop,
+    webhookRateLimiter: noop,
+    default: () => noop,
+  };
+});
 
 describe("Payment & Transfer Orchestration integration tests", () => {
   let tokenA: string;

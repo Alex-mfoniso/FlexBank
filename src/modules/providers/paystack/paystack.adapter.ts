@@ -42,9 +42,12 @@ export class PaystackAdapter
 
   readonly capabilities: readonly ProviderCapability[] = [
     "account_verification",
+    "bank_account_resolution",
     "recipient_management",
     "transfers",
+    "bank_transfer",
     "webhooks",
+    "webhook_status",
     "connectivity",
   ] as const;
 

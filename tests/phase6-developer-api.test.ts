@@ -77,6 +77,15 @@ describe("Phase 6: Developer Financial Infrastructure & Public API Experience", 
 
     mockProvider = {
       id: "paystack",
+      name: "Paystack",
+      capabilities: [
+        "transfers",
+        "bank_account_resolution",
+        "bank_transfer",
+        "transaction_status",
+        "webhook_status",
+      ],
+      hasCapability: vi.fn().mockReturnValue(true),
       resolveAccount: vi.fn().mockImplementation(async ({ accountNumber, bankCode }) => {
         if (bankCode === "058" && accountNumber === "0123456789") {
           return {
@@ -113,6 +122,9 @@ describe("Phase 6: Developer Financial Infrastructure & Public API Experience", 
 
     // Register mock provider into registry
     providerRegistry.register(mockProvider);
+
+    vi.spyOn(prisma, "$transaction").mockImplementation(async (cb: any) => cb(prisma));
+    vi.spyOn(prisma.providerTransaction, "create").mockResolvedValue({} as any);
 
     // Mock Prisma API key lookup
     vi.spyOn(prisma.apiKey, "findUnique").mockImplementation(async ({ where }: any) => {
@@ -151,6 +163,9 @@ describe("Phase 6: Developer Financial Infrastructure & Public API Experience", 
 
     // Mock Prisma Transfer operations
     vi.spyOn(prisma.transfer, "findUnique").mockImplementation(async ({ where }: any) => {
+      if (where.id) {
+        return transferStore.get(where.id) || null;
+      }
       if (where.projectId_reference) {
         for (const t of transferStore.values()) {
           if (t.projectId === where.projectId_reference.projectId && t.reference === where.projectId_reference.reference) {

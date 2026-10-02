@@ -76,24 +76,39 @@ router.get("/health/providers/:providerId", async (req: Request, res: Response, 
   }
 });
 
-// Overall financial providers diagnostic check
+import { providerMetrics } from "../modules/providers/provider-metrics";
+
+// Overall financial providers diagnostic check with health telemetry
 router.get("/health/providers", async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const results = await providerService.verifyAllProviders();
     const allConnected = results.every((r) => r.connected);
+    const healthReports = providerMetrics.getAllHealth();
 
     const statusCode = allConnected ? 200 : 503;
     res.status(statusCode).json({
       status: allConnected ? "ok" : "degraded",
+      health: healthReports,
       providers: results.map((r) => ({
         provider: r.provider,
         connected: r.connected,
+        health: healthReports[r.provider]?.status || "unknown",
+        consecutiveFailures: healthReports[r.provider]?.consecutiveFailures || 0,
+        successRate: `${healthReports[r.provider]?.successRatePercentage ?? 100}%`,
         ...(r.error ? { error: r.error } : {}),
       })),
     });
   } catch (err) {
     next(err);
   }
+});
+
+// Financial telemetry metrics endpoint (GET /health/metrics)
+router.get("/health/metrics", (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: "ok",
+    metrics: providerMetrics.getSnapshot(),
+  });
 });
 
 export const healthRoutes = router;

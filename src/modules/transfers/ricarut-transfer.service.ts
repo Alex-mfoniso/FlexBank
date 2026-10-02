@@ -8,6 +8,9 @@ import {
   TransferNotFoundError,
 } from "../../lib/errors";
 import { ProviderRegistry, providerRegistry } from "../providers/provider.registry";
+import { ProviderRouter } from "../providers/provider.router";
+import { providerMetrics } from "../providers/provider-metrics";
+import { transferStateService } from "./transfer-state.service";
 import { CreateDeveloperTransferInput } from "./transfer.schema";
 import { ProviderTransferStatus } from "../providers/contracts/provider.types";
 import { isValidTransferTransition } from "./transfer-state-machine";
@@ -46,7 +49,14 @@ export interface NormalizedTransfer {
  * Interacts exclusively with TransferProvider capability via ProviderRegistry.
  */
 export class RicarutTransferService {
-  constructor(private readonly registry: ProviderRegistry = providerRegistry) {}
+  private readonly router: ProviderRouter;
+
+  constructor(
+    private readonly registry: ProviderRegistry = providerRegistry,
+    router?: ProviderRouter,
+  ) {
+    this.router = router || new ProviderRouter(this.registry);
+  }
 
   /**
    * Generates a deterministic SHA-256 hash representation of a given request payload.
@@ -124,16 +134,20 @@ export class RicarutTransferService {
       );
     }
 
-    // 4. Resolve Transfer Provider capability via Registry (pure multi-rail abstraction)
-    const resolvedProviderId =
-      providerId ||
-      input.provider ||
-      (input.currency === "KES" || input.phoneNumber || input.destination?.type === "mobile_money"
-        ? "mpesa"
-        : "paystack");
+    // 4. Resolve Transfer Provider capability via Centralized Provider Router
+    const routing = this.router.resolveRoute({
+      country: input.destination?.country,
+      currency: input.currency,
+      destinationType: input.destination?.type || (input.phoneNumber ? "mobile_money" : "bank_account"),
+      bankCode: input.bankCode,
+      accountNumber: input.accountNumber,
+      phoneNumber: input.phoneNumber,
+      explicitProvider: providerId || input.provider,
+      requiredCapability: "transfers",
+    });
 
-    const transferProvider = this.registry.resolveTransfer(resolvedProviderId);
-    const isMpesa = transferProvider.id === "mpesa";
+    const transferProvider = routing.transferProvider;
+    const isMpesa = routing.providerId === "mpesa";
 
     // 5. Register or update idempotency record to pending
     const expiresAt = new Date(Date.now() + 86400 * 1000); // 24 hours
@@ -194,7 +208,7 @@ export class RicarutTransferService {
         status: "pending",
         direction: "outbound",
         type: "external",
-        providerId: transferProvider.id,
+        providerId: routing.providerId,
         metadata: initialMetadata,
       },
     });
@@ -203,7 +217,7 @@ export class RicarutTransferService {
       {
         transferId: transfer.id,
         reference: input.reference,
-        provider: transferProvider.id,
+        provider: routing.providerId,
         rail: isMpesa ? "mpesa" : "paystack",
         destinationType: input.destination?.type || (isMpesa ? "mobile_money" : "bank_account"),
         maskedTarget: isMpesa
@@ -215,7 +229,14 @@ export class RicarutTransferService {
       "Initiating transfer through provider abstraction",
     );
 
-    // 8. Execute Provider Transfer Initiation
+    // 8. Execute Provider Transfer Initiation with Telemetry Tracking
+    providerMetrics.recordRequest({
+      provider: routing.providerId,
+      country: routing.country,
+      currency: input.currency,
+      operation: "transfer",
+    });
+
     try {
       const providerTransfer = await transferProvider.initiateTransfer({
         amount: input.amount,
@@ -229,26 +250,26 @@ export class RicarutTransferService {
         reason: input.reason,
       });
 
-      // Update Transfer with provider details and normalized status
-      const updatedTransfer = await prisma.transfer.update({
-        where: { id: transfer.id },
-        data: {
-          status: providerTransfer.status,
-          providerReference: providerTransfer.providerReference || null,
-          completedAt: providerTransfer.status === "successful" ? new Date() : null,
+      // Update Transfer with provider details and normalized status via central State Machine
+      const { transfer: updatedTransfer } = await transferStateService.transition(
+        transfer.id,
+        providerTransfer.status as TransferStatus,
+        {
+          providerReference: providerTransfer.providerReference || undefined,
+          strict: false,
           metadata: {
             ...initialMetadata,
             providerReference: providerTransfer.providerReference,
             fee: providerTransfer.fee,
           },
         },
-      });
+      );
 
       // Record Provider Transaction audit entry
       await prisma.providerTransaction.create({
         data: {
           transferId: transfer.id,
-          provider: transferProvider.id,
+          provider: routing.providerId,
           providerReference: providerTransfer.providerReference || null,
           status: providerTransfer.status,
           responseMetadata: {
@@ -280,7 +301,7 @@ export class RicarutTransferService {
           account_name: input.accountName,
         }),
         reason: input.reason,
-        provider: transferProvider.id,
+        provider: routing.providerId,
         environment: "test",
         created_at: updatedTransfer.createdAt.toISOString(),
         updated_at: updatedTransfer.updatedAt.toISOString(),
@@ -301,20 +322,37 @@ export class RicarutTransferService {
         },
       });
 
+      // Record successful dispatch telemetry
+      providerMetrics.recordSuccess({
+        provider: routing.providerId,
+        country: routing.country,
+        currency: input.currency,
+        operation: "transfer",
+      });
+
       return normalizedResponse;
     } catch (err: any) {
       // Check for timeout vs immediate failure
       const isTimeout = err?.code === "PROVIDER_TIMEOUT" || err?.statusCode === 504;
       const statusToSet = isTimeout ? "processing" : "failed";
 
-      await prisma.transfer.update({
-        where: { id: transfer.id },
-        data: {
-          status: statusToSet,
-          failureCode: err?.code || "TRANSFER_FAILED",
-          failureMessage: err?.message,
-        },
+      // Transition transfer status safely via central State Machine
+      await transferStateService.transition(transfer.id, statusToSet as TransferStatus, {
+        failureCode: err?.code || "TRANSFER_FAILED",
+        failureMessage: err?.message,
+        strict: false,
       });
+
+      // Record failure telemetry
+      providerMetrics.recordFailure(
+        {
+          provider: routing.providerId,
+          country: routing.country,
+          currency: input.currency,
+          operation: "transfer",
+        },
+        isTimeout,
+      );
 
       // Mark idempotency failed so user can retry, or keep pending if in ambiguous timeout
       await prisma.idempotencyRecord.update({

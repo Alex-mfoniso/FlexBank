@@ -127,6 +127,12 @@ describe("Phase 4: Developer Outbound Transfers", () => {
       return record;
     });
 
+    vi.spyOn(prisma, "$transaction").mockImplementation(async (cb: any) => cb(prisma));
+
+    vi.spyOn(prisma.transfer, "findUnique").mockImplementation(async ({ where }: any) => {
+      return transferStore.get(where.id) || null;
+    });
+
     vi.spyOn(prisma.transfer, "update").mockImplementation(async ({ where, data }: any) => {
       const existing = transferStore.get(where.id);
       const updated = { ...existing, ...data, updatedAt: new Date() };

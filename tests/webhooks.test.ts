@@ -98,6 +98,13 @@ describe("Phase 5: Provider Webhook Handling & Status Synchronization", () => {
       return null;
     });
 
+    vi.spyOn(prisma, "$transaction").mockImplementation(async (cb: any) => cb(prisma));
+
+    vi.spyOn(prisma.transfer, "findUnique").mockImplementation(async (args: any) => {
+      const existing = transferStore.get(args.where.id);
+      return existing ? { ...existing } : null;
+    });
+
     vi.spyOn(prisma.transfer, "update").mockImplementation(async (args: any) => {
       const existing = transferStore.get(args.where.id);
       if (!existing) throw new Error("Transfer not found");
@@ -109,6 +116,12 @@ describe("Phase 5: Provider Webhook Handling & Status Synchronization", () => {
       transferStore.set(args.where.id, updated);
       return { ...updated };
     });
+
+    if (prisma.providerEvent) {
+      vi.spyOn(prisma.providerEvent, "create").mockResolvedValue({} as any);
+      vi.spyOn(prisma.providerEvent, "update").mockResolvedValue({} as any);
+      vi.spyOn(prisma.providerEvent, "findUnique").mockResolvedValue(null);
+    }
 
     vi.spyOn(prisma.webhookEvent, "findUnique").mockImplementation(async (args: any) => {
       const { provider_providerEventId } = args.where || {};

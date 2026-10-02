@@ -9,6 +9,7 @@ import {
 } from "./transfer.schema";
 import { logger } from "../../lib/logger";
 import { ValidationError, TransferNotFoundError } from "../../lib/errors";
+import { reconciliationService } from "../reconciliation/reconciliation.service";
 
 function maskAccountNumber(accNum?: string): string {
   if (!accNum) return "";
@@ -199,6 +200,26 @@ export class TransferController {
       );
 
       res.status(200).json({ status: "success", result: result.action });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  reconcile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const transferId = req.params.transferId || req.params.id;
+      const result = await reconciliationService.reconcileTransfer(transferId);
+      res.status(200).json({ status: "success", data: result });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getReconciliations = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const transferId = req.params.transferId || req.params.id;
+      const records = await reconciliationService.getReconciliationHistory(transferId);
+      res.status(200).json({ status: "success", data: records });
     } catch (err) {
       next(err);
     }

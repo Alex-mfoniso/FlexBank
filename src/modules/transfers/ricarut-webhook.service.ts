@@ -4,6 +4,8 @@ import { logger } from "../../lib/logger";
 import { UnauthorizedError, ProviderUnavailableError } from "../../lib/errors";
 import { ProviderRegistry, providerRegistry } from "../providers/provider.registry";
 import { isValidTransferTransition } from "./transfer-state-machine";
+import { transferStateService } from "./transfer-state.service";
+import { providerMetrics } from "../providers/provider-metrics";
 import { TransferService } from "./transfer.service";
 import { TransferStatus } from "@prisma/client";
 
@@ -59,12 +61,15 @@ export class RicarutWebhookService {
       provider.verifyWebhookSignature(signature, rawString);
 
     if (!isValidSignature) {
+      providerMetrics.recordWebhook(providerId, false);
       logger.warn(
         { provider: providerId },
         "Rejected provider webhook request: invalid cryptographic signature or verification failed",
       );
       throw new UnauthorizedError("Invalid webhook cryptographic signature");
     }
+
+    providerMetrics.recordWebhook(providerId, true);
 
     // 3. Parse and Normalize Provider Event
     const event = provider.parseWebhookEvent(parsedPayload);
@@ -97,7 +102,7 @@ export class RicarutWebhookService {
       };
     }
 
-    // Record Event Receipt in database
+    // Record Event Receipt in database (both ProviderEvent and WebhookEvent)
     if (!existingEvent) {
       try {
         await prisma.webhookEvent.create({
@@ -109,6 +114,23 @@ export class RicarutWebhookService {
             payloadHash,
           },
         });
+
+        // Also record in ProviderEvent store for comprehensive provider auditability
+        try {
+          await prisma.providerEvent.create({
+            data: {
+              provider: providerId,
+              eventId,
+              eventType,
+              providerReference: (event as any).providerReference || null,
+              status: "received",
+              payloadHash,
+              payload: (parsedPayload as any) || {},
+            },
+          });
+        } catch {
+          // Ignore non-fatal ProviderEvent errors (e.g. duplicate eventId)
+        }
       } catch (err: any) {
         if (err?.code === "P2002") {
           logger.info(
@@ -217,25 +239,17 @@ export class RicarutWebhookService {
           );
         }
       } else {
-        // Direct developer transfer mutation
-        const currentMetadata = (transfer.metadata as any) || {};
-        await prisma.transfer.update({
-          where: { id: transfer.id },
-          data: {
-            status: targetStatus,
-            completedAt:
-              targetStatus === "successful"
-                ? (event as any).timestamp || new Date()
-                : transfer.completedAt,
-            failureCode:
-              targetStatus === "failed" ? failureReason || "TRANSFER_FAILED" : transfer.failureCode,
-            failureMessage: targetStatus === "failed" ? failureReason : transfer.failureMessage,
-            metadata: {
-              ...currentMetadata,
-              providerReference: providerReference || transfer.providerReference,
-              eventId,
-              failureReason: targetStatus === "failed" ? failureReason : currentMetadata.failureReason,
-            },
+        // Direct developer transfer mutation via centralized state machine
+        const failureReason = (event as any).failureReason || (event as any).failureMessage;
+        await transferStateService.transition(transfer.id, targetStatus, {
+          providerReference: providerReference || transfer.providerReference || undefined,
+          failureCode: targetStatus === "failed" ? (event as any).failureCode || "TRANSFER_FAILED" : undefined,
+          failureMessage: targetStatus === "failed" ? failureReason : undefined,
+          eventId,
+          strict: false,
+          metadata: {
+            eventId,
+            webhookReceivedAt: new Date().toISOString(),
           },
         });
       }
@@ -290,6 +304,23 @@ export class RicarutWebhookService {
           provider_providerEventId: {
             provider,
             providerEventId,
+          },
+        },
+        data: {
+          status,
+          processedAt: new Date(),
+        },
+      });
+    } catch {
+      // Ignore update errors during teardown/mocking
+    }
+
+    try {
+      await prisma.providerEvent.update({
+        where: {
+          provider_eventId: {
+            provider,
+            eventId: providerEventId,
           },
         },
         data: {

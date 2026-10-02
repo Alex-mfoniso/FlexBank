@@ -16,7 +16,6 @@ import { MpesaClient } from "./mpesa.client";
 import { getMpesaConfig, isMpesaConfigured, MpesaConfig } from "../../../config/mpesa.config";
 import {
   ProviderValidationError,
-  ProviderTransferFailedError,
   normalizeProviderError,
 } from "../provider.errors";
 import { normalizeKenyanPhoneNumber, maskPhoneNumber, sanitizeMpesaText } from "./mpesa.utils";
@@ -34,7 +33,10 @@ export class MpesaB2CAdapter implements FinancialProvider, TransferProvider, Web
 
   readonly capabilities: readonly ProviderCapability[] = [
     "transfers",
+    "mobile_money_transfer",
+    "transaction_status",
     "webhooks",
+    "webhook_status",
     "connectivity",
   ] as const;
 
@@ -206,7 +208,7 @@ export class MpesaB2CAdapter implements FinancialProvider, TransferProvider, Web
     }
 
     try {
-      const queryResult = await this.getClient().queryTransactionStatus({
+      await this.getClient().queryTransactionStatus({
         Initiator: config.initiatorName,
         SecurityCredential: config.securityCredential,
         CommandID: "TransactionStatusQuery",

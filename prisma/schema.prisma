@@ -352,6 +352,7 @@ model Transfer {
   destinationAccount    Account?          @relation("DestinationTransfers", fields: [destinationAccountId], references: [id], onDelete: SetNull)
   beneficiary           Beneficiary?      @relation(fields: [beneficiaryId], references: [id], onDelete: SetNull)
   providerTransactions  ProviderTransaction[]
+  reconciliations       ReconciliationRecord[]
 
   @@unique([projectId, reference])
   @@index([projectId])
@@ -393,6 +394,46 @@ model ProviderTransaction {
 
   @@index([transferId])
   @@index([providerReference])
+}
+
+model ReconciliationRecord {
+  id                String   @id @default(uuid())
+  transferId        String
+  projectId         String
+  provider          String
+  providerReference String?
+  previousStatus    String
+  providerStatus    String
+  resultingStatus   String
+  outcome           String   // "matched", "reconciled", "mismatch", "unresolvable", "error"
+  details           Json?
+  checkedAt         DateTime @default(now())
+
+  transfer          Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  @@index([transferId])
+  @@index([projectId])
+  @@index([provider])
+  @@index([checkedAt])
+}
+
+model ProviderEvent {
+  id                String    @id @default(uuid())
+  provider          String
+  eventId           String    // provider event ID or dedupe key
+  eventType         String
+  providerReference String?
+  status            String    @default("received") // "received", "processed", "ignored", "failed", "unmatched"
+  payloadHash       String
+  payload           Json?
+  error             String?
+  receivedAt        DateTime  @default(now())
+  processedAt       DateTime?
+
+  @@unique([provider, eventId])
+  @@index([provider, eventId])
+  @@index([providerReference])
+  @@index([receivedAt])
 }
 
 model WebhookEvent {

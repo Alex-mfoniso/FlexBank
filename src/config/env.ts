@@ -47,3 +47,36 @@ if (!parsedEnv.success) {
 
 export const env = parsedEnv.data;
 export type Env = z.infer<typeof envSchema>;
+
+/**
+ * Startup integrity guard.
+ * Prevents accidental cross-contamination between sandbox and production environments.
+ */
+export function assertEnvironmentIntegrity(): void {
+  const isProduction = env.NODE_ENV === "production";
+
+  if (!isProduction) {
+    // Non-production guard: Never allow live credentials in sandbox
+    if (env.PAYSTACK_SECRET_KEY?.startsWith("sk_live_")) {
+      console.error("FATAL: Live Paystack credentials (sk_live_) detected in non-production environment!");
+      process.exit(1);
+    }
+    if (env.MPESA_ENV === "production") {
+      console.error("FATAL: M-Pesa is set to production mode in non-production environment!");
+      process.exit(1);
+    }
+  } else {
+    // Production guard: Never allow test credentials in production
+    if (env.PAYSTACK_SECRET_KEY?.startsWith("sk_test_")) {
+      console.error("FATAL: Test Paystack credentials (sk_test_) detected in production environment!");
+      process.exit(1);
+    }
+    if (env.MPESA_ENV === "sandbox") {
+      console.error("FATAL: M-Pesa is set to sandbox mode in production environment!");
+      process.exit(1);
+    }
+  }
+}
+
+// Run guard check immediately upon configuration import
+assertEnvironmentIntegrity();
